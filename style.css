@@ -55,3 +55,8 @@ p{
     font-size: 1.5rem;
     margin: 5px 0;
 }
+.errorDisplay{
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: hsla(0, 0%, 0%, 0.75);
+}
