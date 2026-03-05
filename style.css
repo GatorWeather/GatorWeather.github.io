@@ -37,7 +37,7 @@ button[type="submit"]:hover{
 .card{
    padding: 30px;
    min-width: 500px;
-   min-height: 5 00px;
+   min-height: 500px;
    background-color: #f7f7f7;
    border-radius: 50px;
    box-shadow: 0 30px 50px #5553;
@@ -52,11 +52,91 @@ h1{
     margin-bottom: 25px;
 }
 p{
-    font-size: 1.5rem;
+    font-size: 2.5rem;
     margin: 5px 0;
 }
+.cityDisplay{
+    font-size: 3.5em;
+    font-weight: bold;
+    color: hsla(0, 0%, 0%, 0.75);
+    margin-bottom: 25px;
+
+}
+
+.tempDisplay{
+    font-size: 4rem;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.descriptionDisplay{
+    font-style: italic;
+    font-weight: bold;
+    font-size: .5rem
+
+}
+
+.weatherEmoji{
+    text-align: center;
+}
+
+.weatherEmoji .emoji{
+    font-size: 3rem;
+}
+
+.weatherEmoji .desc{
+    font-size: 1.2rem;
+    text-transform: capitalize;
+}
+
+ul{
+    width: 100%;
+    padding: 0;
+    margin-top: 20px;
+
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+li{
+    
+    background-color: #f78a55;
+    color: #fff;
+    border-radius: 10px;
+    padding: 20px 10px;
+    background-image: linear-gradient(
+        to bottom,
+        transparent 50%,
+        #0003 50%
+    );
+
+    font-weight: bold;
+    font-size: small;
+}
+
+li i{
+
+    font-size: 2em;
+    display: block!important;
+    margin: 20px 0;
+}
+li:nth-child(2){
+    
+    background-color: #b56291;
+}
+
+li:nth-child(3){
+   
+    background-color: #48567b;
+}
+
+
+
 .errorDisplay{
     font-size: 2.5rem;
     font-weight: bold;
     color: hsla(0, 0%, 0%, 0.75);
 }
+
