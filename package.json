@@ -1,0 +1,26 @@
+{
+  "name": "group_6",
+  "version": "1.0.0",
+  "description": "GatorWeather is a collaborative project aimed at bringing free weather forcasting and up to date weather coditions to the public.",
+  "main": "index.js",
+  "scripts": {
+"lint": "eslint ."
+},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GatorWeather/Group_6.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/GatorWeather/Group_6/issues"
+  },
+  "homepage": "https://github.com/GatorWeather/Group_6#readme",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.2",
+    "globals": "^17.4.0"
+  }
+}
