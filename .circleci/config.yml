@@ -6,10 +6,10 @@ jobs:
   lint:
     docker:
       - image: cimg/node:20.11
-steps:
-  - checkout
-  - run: npm ci
-  - run: npm run lint
+    steps:
+      - checkout
+      - run: npm ci
+      - run: npm run lint
 
 workflows:
   main:
