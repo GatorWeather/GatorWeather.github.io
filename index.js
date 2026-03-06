@@ -40,7 +40,7 @@ async function getWeatherData(city){
 function displayWeatherInfo(data){
     
     const {name: city, 
-       main: {temp, humidity, pressure},
+       main: {temp, feels_like, humidity, pressure},
        wind: {speed},
        weather: [{description, id}]} = data;
     
@@ -91,10 +91,17 @@ function displayWeatherInfo(data){
     Wind: ${speed} mph
     `;
 
+    // "Feels like" temp
+    const feelsLikeItem = document.createElement("li");
+    feelsLikeItem.innerHTML = `
+    <i class="fa-solid fa-temperature-half"></i>
+    Feels Like: ${feels_like.toFixed(1)}°F `
+    ; 
     
     list.appendChild(humidityItem); 
     list.appendChild(pressureItem); 
     list.appendChild(windItem);
+    list.appendChild(feelsLikeItem);
     card.appendChild(cityDisplay);
     card.appendChild(tempDisplay);
     card.appendChild(weatherEmoji);
