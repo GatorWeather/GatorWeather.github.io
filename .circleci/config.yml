@@ -8,6 +8,7 @@ jobs:
       - image: cimg/node:20.11
     steps:
       - checkout
+      - run: node -v
       - run: npm ci
       - run: npm run lint
 
