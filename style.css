@@ -89,38 +89,48 @@ p{
     text-transform: capitalize;
 }
 
+.sectionLabel{
+    width: 100%;
+    margin: 16px 0 8px 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-align: left;
+}
+
 ul{
     width: 100%;
     padding: 0;
     margin-top: 20px;
-
     list-style: none;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
+    gap: 12px;
 }
 
 li{
-    
     background-color: #f78a55;
     color: #fff;
-    border-radius: 10px;
-    padding: 20px 10px;
+    padding: 12px 12px;
+    min-height: 70px;
+
     background-image: linear-gradient(
         to bottom,
         transparent 50%,
         #0003 50%
     );
 
-    font-weight: bold;
-    font-size: small;
+    font-weight: 700;
+    font-size: 0.95rem;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 li i{
-
-    font-size: 2em;
-    display: block!important;
-    margin: 20px 0;
+    font-size: 1.5rem;
+    display: inline-block;
+    margin: 0;
 }
 li:nth-child(2){
     
@@ -132,7 +142,9 @@ li:nth-child(3){
     background-color: #48567b;
 }
 
-
+li:nth-child(4){
+    background-color: #2f8f7a;
+}
 
 .errorDisplay{
     font-size: 2.5rem;
@@ -140,3 +152,65 @@ li:nth-child(3){
     color: hsla(0, 0%, 0%, 0.75);
 }
 
+.hiLoLabel{
+    width: 100%;
+    font-size: 0.95rem;
+    font-weight: 600;
+    opacity: 0.85;
+    margin-bottom: 8px;
+    text-align: left;
+}
+
+/* 7 day forecast styles */
+.forecast{
+    width: 100%;
+    margin-top: 18px;
+}
+
+.forecastHeader{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
+}
+
+.forcastTitle{
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.hiLoLabel{
+    font-size: 0.9rem;
+    font-weight: 600;
+    opacity: 0.85;
+}
+
+.forecastRow{
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 10px 0;
+}
+
+.forecastDay{
+    min-width: 110px;
+    flex: 0 0 auto;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+    text-align: center;
+}
+
+.forecastEmoji{
+    font-size: 1.5rem;
+    margin: 6px 0;
+}
+.forecastName{
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+.forecastTemps{
+    font-size: 1.1rem;
+}

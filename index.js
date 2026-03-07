@@ -7,12 +7,17 @@ weatherForm.addEventListener("submit", async event => {
 
     event.preventDefault();
 
-    const city = cityInput.value;
+    const city = cityInput.value.trim();
 
     if (city){
         try {
             const weatherData = await getWeatherData(city);
             displayWeatherInfo(weatherData);  
+
+            const lat = weatherData.coord.lat;
+            const lon = weatherData.coord.lon;
+            const forecastData = await getForecastData(lat, lon);
+            display7DayForecast(forecastData);
         }
         catch (error){
             console.error(error);
@@ -63,7 +68,11 @@ function displayWeatherInfo(data){
     const cityDisplay = document.createElement("h1");
     const tempDisplay = document.createElement("p");
     const weatherEmoji = document.createElement("p");        
-
+    
+    const currentLabel = document.createElement("h2"); // "Current Conditions" label
+    currentLabel.textContent = "Current Conditions"; // add text content
+    currentLabel.classList.add("sectionLabel");     // add class for styling
+    
     cityDisplay.textContent = city;
     tempDisplay.textContent = `${temp.toFixed(1)}°F`;
     weatherEmoji.innerHTML = `
@@ -74,10 +83,6 @@ function displayWeatherInfo(data){
 
     tempDisplay.classList.add("tempDisplay");
     weatherEmoji.classList.add("weatherEmoji");
-
-    card.appendChild(cityDisplay);
-    card.appendChild(tempDisplay);
-    
 
     // grid container
     const list = document.createElement("ul");
@@ -91,7 +96,7 @@ function displayWeatherInfo(data){
     const pressureItem = document.createElement("li");
     pressureItem.innerHTML = `
         <i class="fa-solid fa-gauge"></i>
-        Pressure: ${pressure}
+        Pressure: ${pressure} hPa
     `;
 
     const windItem = document.createElement("li");
@@ -104,8 +109,7 @@ function displayWeatherInfo(data){
     const feelsLikeItem = document.createElement("li");
     feelsLikeItem.innerHTML = `
     <i class="fa-solid fa-temperature-half"></i>
-    Feels Like: ${feels_like.toFixed(1)}°F `
-    ; 
+    Feels Like: ${feels_like.toFixed(1)}°F`; 
     
     list.appendChild(humidityItem); 
     list.appendChild(pressureItem); 
@@ -114,7 +118,7 @@ function displayWeatherInfo(data){
     card.appendChild(cityDisplay);
     card.appendChild(tempDisplay);
     card.appendChild(weatherEmoji);
-    card.appendChild(cityDisplay);
+    card.appendChild(currentLabel);
     card.appendChild(list);
 }
 
@@ -172,4 +176,94 @@ function displayError(message){
     card.textContent = "";
     card.style.display = "flex";
     card.appendChild(errorDisplay);
+}
+
+async function getForecastData(lat, lon){
+    // One call 7 day for case using condinates. 
+    const apiUrl = 
+    "https://api.open-meteo.com/v1/forecast" +
+    "?latitude=" + lat +
+    "&longitude=" + lon +
+    "&daily=weathercode,temperature_2m_max,temperature_2m_min" +
+    "&temperature_unit=fahrenheit" +
+    "&timezone=auto" +
+    "&forecast_days=7";
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+        throw new Error("Could not fetch forecast data");
+    }
+    return await response.json();
+}
+
+function display7DayForecast(forecastData){
+    // get rid of old forecast first
+    const oldForecast = document.querySelector(".forecast");
+    if (oldForecast){
+        oldForecast.remove();
+    }
+
+    const forecastContainer = document.createElement("div");
+    forecastContainer.classList.add("forecast");
+
+    const header = document.createElement("div");
+    header.classList.add("forecastHeader");
+
+    const forecastLabel = document.createElement("h2");
+    forecastLabel.textContent = "Weekly Forecast";
+    forecastLabel.classList.add("forcastTitle");
+
+    const hiLoLabel = document.createElement("div");
+    hiLoLabel.textContent = "Low / High";
+    hiLoLabel.classList.add("hiLoLabel");
+
+    header.appendChild(forecastLabel);
+    header.appendChild(hiLoLabel);
+    
+    const row = document.createElement("div");
+    row.classList.add("forecastRow");
+
+    const dates = forecastData.daily.time;
+    const highs = forecastData.daily.temperature_2m_max;
+    const lows = forecastData.daily.temperature_2m_min;
+    const codes = forecastData.daily.weathercode;
+
+    for (let i = 0; i < 7; i++){
+        const dayCard = document.createElement("div");
+        dayCard.classList.add("forecastDay");
+
+        const date = new Date(dates[i]);
+        const dayName = date.toLocaleDateString("en-US", {weekday: "short"});
+
+        const high = Math.round(highs[i]);
+        const low = Math.round(lows[i]);
+
+        const emoji = getForecastEmoji(codes[i]);
+
+        dayCard.innerHTML = `
+            <div class="forecastName">${dayName}</div>
+            <div class="forecastEmoji">${emoji}</div>
+            <div class="forecastTemps">${low}° / ${high}°</div>`;
+            row.appendChild(dayCard);
+    }
+    forecastContainer.appendChild(header);
+    forecastContainer.appendChild(row);
+    card.appendChild(forecastContainer);
+}
+
+function getForecastEmoji(code){
+    if (code === 0) return "☀️"; 
+    if (code === 1 || code === 2) return "🌤️";
+    if (code === 3) return "☁️";
+    if (code === 45 || code === 48) return "🌫️";
+    if (code === 51 || code === 53 || code === 55) return "🌦️";
+    if (code === 56 || code === 57) return "🌧️";
+    if (code === 61 || code === 63 || code === 65) return "🌧️";
+    if (code === 66 || code === 67) return "🌧️";
+    if(code === 71 || code === 73 || code === 75) return "❄️";
+    if (code === 77) return "🌨️";
+    if (code === 80 || code === 81 || code === 82) return "🌧️";
+    if (code === 85 || code === 86) return "❄️";
+    if (code === 95 || code === 96 || code === 99) return "⛈️";
+        return "❓";
 }
