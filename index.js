@@ -2,10 +2,13 @@ const weatherForm = document.querySelector(".weatherForm");
 const cityInput = document.querySelector(".cityInput");
 const card = document.querySelector(".card");
 const apiKey = "8e2d81f77bf781eee278d91811303875";
+const conditionsContainer = document.querySelector(".conditionsContainer");
+const forecastWrapper = document.querySelector(".forecastContainer");
 
 const clearBtn = document.querySelector(".clearBtn");
 
 const suggestions = document.querySelector(".suggestions");
+
 
 cityInput.addEventListener("input", async () => {
 
@@ -25,6 +28,12 @@ cityInput.addEventListener("input", async () => {
     suggestions.innerHTML = "";
 
     cities.forEach(city => {
+
+        if (cityInput.value.length > 0) {
+        searchBox.classList.add("hasText");
+        } else {
+            searchBox.classList.remove("hasText");
+        }
 
         const div = document.createElement("div");
         div.classList.add("suggestionItem");
@@ -46,6 +55,7 @@ cityInput.addEventListener("input", async () => {
 
 clearBtn.addEventListener("click", () => {
     cityInput.value = "";
+    searchBox.classList.remove("hasText"); 
     cityInput.focus();
 });
 
@@ -56,7 +66,7 @@ weatherForm.addEventListener("submit", async event => {
     const city = cityInput.value.trim();
 
     suggestions.innerHTML = "";
-    cityInput.blur();   // removes focus glow
+    cityInput.blur();   
 
     if (city){
         try {
@@ -107,33 +117,46 @@ function displayWeatherInfo(data){
        main: {temp, feels_like, humidity, pressure},
        wind: {speed},
        weather: [{description, id}]} = data;
-    
-    card.textContent = "";
-    card.style.display = "flex";
-
-    // for dynamic background
-    setWeatherTheme(id);
 
     const cityDisplay = document.createElement("h1");
     const tempDisplay = document.createElement("p");
-    const weatherEmoji = document.createElement("p");        
-    
-    const currentLabel = document.createElement("h2"); // "Current Conditions" label
-    currentLabel.textContent = "Current Conditions"; // add text content
-    currentLabel.classList.add("sectionLabel");     // add class for styling
-    
+    const weatherEmoji = document.createElement("p");
+
     cityDisplay.textContent = city;
     tempDisplay.textContent = `${temp.toFixed(1)}°F`;
     weatherEmoji.innerHTML = `
-    <div class="emoji">${getWeatherEmoji(id)}</div>
-    <div class="desc">${description}</div>
-`;
-    
+        <div class="emoji">${getWeatherEmoji(id)}</div>
+        <div class="desc">${description}</div>
+    `;
 
     tempDisplay.classList.add("tempDisplay");
     weatherEmoji.classList.add("weatherEmoji");
 
-    // grid container
+    
+    card.textContent = "";
+    card.style.display = "flex";
+    card.style.flexDirection = "row";
+    card.style.justifyContent = "space-between";
+    card.style.alignItems = "center";
+
+    setWeatherTheme(id);
+
+    const leftSide = document.createElement("div");
+    leftSide.style.display = "flex";
+    leftSide.style.flexDirection = "column";
+    leftSide.style.alignItems = "flex-start";
+    leftSide.appendChild(weatherEmoji);
+    leftSide.appendChild(tempDisplay);
+
+    const rightSide = document.createElement("div");
+    rightSide.style.textAlign = "right";
+    rightSide.appendChild(cityDisplay);
+
+    card.appendChild(rightSide);    
+    card.appendChild(leftSide);
+    
+
+    // conditions grid
     const list = document.createElement("ul");
 
     const humidityItem = document.createElement("li");
@@ -150,25 +173,22 @@ function displayWeatherInfo(data){
 
     const windItem = document.createElement("li");
     windItem.innerHTML = `
-    <i class="fa-solid fa-wind"></i>
-    Wind: ${speed} mph
+        <i class="fa-solid fa-wind"></i>
+        Wind: ${speed} mph
     `;
 
-    // "Feels like" temp
     const feelsLikeItem = document.createElement("li");
     feelsLikeItem.innerHTML = `
-    <i class="fa-solid fa-temperature-half"></i>
-    Feels Like: ${feels_like.toFixed(1)}°F`; 
-    
+        <i class="fa-solid fa-temperature-half"></i>
+        Feels Like: ${feels_like.toFixed(1)}°F`;
+
     list.appendChild(humidityItem); 
     list.appendChild(pressureItem); 
     list.appendChild(windItem);
     list.appendChild(feelsLikeItem);
-    card.appendChild(cityDisplay);
-    card.appendChild(tempDisplay);
-    card.appendChild(weatherEmoji);
-    card.appendChild(currentLabel);
-    card.appendChild(list);
+    
+    conditionsContainer.textContent = "";
+    conditionsContainer.appendChild(list);
 }
 
 function getWeatherEmoji(weatherId){
@@ -246,7 +266,6 @@ async function getForecastData(lat, lon){
 }
 
 function display7DayForecast(forecastData){
-    // get rid of old forecast first
     const oldForecast = document.querySelector(".forecast");
     if (oldForecast){
         oldForecast.remove();
@@ -297,7 +316,8 @@ function display7DayForecast(forecastData){
     }
     forecastContainer.appendChild(header);
     forecastContainer.appendChild(row);
-    card.appendChild(forecastContainer);
+    forecastWrapper.textContent = "";
+    forecastWrapper.appendChild(forecastContainer);
 }
 
 function getForecastEmoji(code){
