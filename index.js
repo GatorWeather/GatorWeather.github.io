@@ -4,7 +4,7 @@ const card = document.querySelector(".card");
 const apiKey = "8e2d81f77bf781eee278d91811303875";
 const conditionsContainer = document.querySelector(".conditionsContainer");
 const forecastWrapper = document.querySelector(".forecastContainer");
-
+const searchBox = document.querySelector(".searchBox");
 const clearBtn = document.querySelector(".clearBtn");
 
 const suggestions = document.querySelector(".suggestions");
