@@ -30,28 +30,35 @@ cityInput.addEventListener("input", async () => {
     cities.forEach(city => {
 
         if (cityInput.value.length > 0) {
-        searchBox.classList.add("hasText");
+            searchBox.classList.add("hasText");
         } else {
             searchBox.classList.remove("hasText");
         }
 
         const div = document.createElement("div");
         div.classList.add("suggestionItem");
-
         div.textContent = `${city.name}, ${city.state || ""} ${city.country}`;
 
         div.addEventListener("click", () => {
-
-            cityInput.value = city.name;
+            cityInput.value = `${city.name}, ${city.state || ""} ${city.country}`;
             suggestions.innerHTML = "";
+            cityInput.blur();
 
-            weatherForm.dispatchEvent(new Event("submit"));
+            getWeatherDataByCoords(city.lat, city.lon)
+                .then(weatherData => {
+                    displayWeatherInfo(weatherData);
+                    const lat = weatherData.coord.lat;
+                    const lon = weatherData.coord.lon;
+                    return getForecastData(lat, lon).then(display7DayForecast);
+                })
+                .catch(displayError);
         });
 
         suggestions.appendChild(div);
     });
 
 });
+
 
 clearBtn.addEventListener("click", () => {
     cityInput.value = "";
@@ -60,51 +67,84 @@ clearBtn.addEventListener("click", () => {
 });
 
 weatherForm.addEventListener("submit", async event => {
-
     event.preventDefault();
-
     const city = cityInput.value.trim();
-
     suggestions.innerHTML = "";
-    cityInput.blur();   
+    cityInput.blur();
 
-    if (city){
-        try {
-            const weatherData = await getWeatherData(city);
-            displayWeatherInfo(weatherData);  
-
-            const lat = weatherData.coord.lat;
-            const lon = weatherData.coord.lon;
-            const forecastData = await getForecastData(lat, lon);
-            display7DayForecast(forecastData);
-        }
-        catch (error){
-            console.error(error);
-            displayError(error);
-        }
-    }
-    else {
+    if (!city) {
         displayError("Please enter a city name or ZIP code");
+        return;
     }
 
+    try {
+        // zip code search
+if (!isNaN(city)) {
+    if (city.length !== 5) throw new Error("Invalid ZIP code, enter 5 digits.");
+    const zipGeoResponse = await fetch(
+        `https://api.openweathermap.org/geo/1.0/zip?zip=${city},US&appid=${apiKey}`
+    );
+    if (!zipGeoResponse.ok) throw new Error("Invalid ZIP code or not found.");
+    const zipData = await zipGeoResponse.json();
+    const weatherData = await getWeatherDataByCoords(zipData.lat, zipData.lon);
+    displayWeatherInfo(weatherData);
+    const forecastData = await getForecastData(weatherData.coord.lat, weatherData.coord.lon);
+    display7DayForecast(forecastData);
+    return;
+}
+
+        // city name — check for duplicates first
+        const geoResponse = await fetch(
+            `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=5&appid=${apiKey}`
+        );
+        const matches = await geoResponse.json();
+
+        if (matches.length === 0) {
+            displayError("City not found");
+            return;
+        }
+
+        // if only one match, or all matches are the same country+state, just use the first
+        const unique = matches.filter((m, i, arr) =>
+            arr.findIndex(x => x.state === m.state && x.country === m.country) === i
+        );
+
+        if (unique.length === 1) {
+            const weatherData = await getWeatherDataByCoords(matches[0].lat, matches[0].lon);
+            displayWeatherInfo(weatherData);
+            const forecastData = await getForecastData(weatherData.coord.lat, weatherData.coord.lon);
+            display7DayForecast(forecastData);
+        } else {
+            // show disambiguation list
+            unique.forEach(match => {
+                const div = document.createElement("div");
+                div.classList.add("suggestionItem");
+                div.textContent = `${match.name}, ${match.state || ""} ${match.country}`;
+                div.addEventListener("click", () => {
+                    cityInput.value = div.textContent;
+                    suggestions.innerHTML = "";
+                    getWeatherDataByCoords(match.lat, match.lon)
+                        .then(weatherData => {
+                            displayWeatherInfo(weatherData);
+                            return getForecastData(weatherData.coord.lat, weatherData.coord.lon)
+                                .then(display7DayForecast);
+                        })
+                        .catch(displayError);
+                });
+                suggestions.appendChild(div);
+            });
+        }
+    } catch (error) {
+        console.error(error);
+        displayError(error);
+    }
 });
 
-async function getWeatherData(city){
-    let apiUrl;
-    city = city.trim();
-    //Edit this api call here to get different data
-    //If the city variable is not strictly a number use search by city name, else use ZIP lookup.
-    if (isNaN(city)){
-        apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=imperial&appid=${apiKey}`;
-    }
-    else {
-        if (city.length !== 5){
-            throw new Error("Invalid ZIP code, enter 5 digits.")
-        }
-        apiUrl = `https://api.openweathermap.org/data/2.5/weather?zip=${city}&units=imperial&appid=${apiKey}`;
-    }
-    const response = await fetch(apiUrl);
 
+// get weather data by coordinates
+async function getWeatherDataByCoords(lat, lon) {
+    const apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=imperial&appid=${apiKey}`;
+    const response = await fetch(apiUrl);
     if (!response.ok) {
         throw new Error("Could not fetch weather data");
     }
@@ -248,7 +288,7 @@ function displayError(message){
 }
 
 async function getForecastData(lat, lon){
-    // One call 7 day for case using condinates. 
+    // one call 7 day for case using condinates. 
     const apiUrl = 
     "https://api.open-meteo.com/v1/forecast" +
     "?latitude=" + lat +
@@ -335,4 +375,4 @@ function getForecastEmoji(code){
     if (code === 85 || code === 86) return "❄️";
     if (code === 95 || code === 96 || code === 99) return "⛈️";
         return "❓";
-}
+};

@@ -11,26 +11,24 @@
     <img src="EngineeringGator_original_transparent.png" class="logo" alt="Gator Engineering logo">
 
     <form class="weatherForm">
+        <div class="searchBox">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input class="cityInput" type="text" placeholder="Search for a city...">
+            <i class="fa-solid fa-xmark clearBtn"></i>
+            <div class="suggestions"></div>
+        </div>
+    </form>
 
-    <form class="weatherForm">
-    <div class="searchBox">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input class="cityInput" type="text" placeholder="Search for a city...">
-        <i class="fa-solid fa-xmark clearBtn"></i>
-        <div class="suggestions"></div>
+    <div class="mainLayout">
+        <div class="leftColumn">
+            <div class="card" style="display: none"></div>
+            <div class="conditionsContainer"></div>
+            <div class="forecastContainer"></div>
+        </div>
+        <div class="rightColumn">
+            <!-- hourly forecast will go here -->
+        </div>
     </div>
-</form>
-
-<div class="mainLayout">
-    <div class="leftColumn">
-        <div class="card" style="display: none"></div>
-        <div class="conditionsContainer"></div>
-        <div class="forecastContainer"></div>  
-    </div>
-    <div class="rightColumn">
-        <!-- hourly forecast will go here -->
-    </div>
-</div>
 
     <script src="index.js"></script>
 </body>
