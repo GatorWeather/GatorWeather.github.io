@@ -6,6 +6,7 @@ const conditionsContainer = document.querySelector(".conditionsContainer");
 const forecastWrapper = document.querySelector(".forecastContainer");
 const searchBox = document.querySelector(".searchBox");
 const clearBtn = document.querySelector(".clearBtn");
+const locationBtn = document.querySelector(".locationBtn");
 
 const suggestions = document.querySelector(".suggestions");
 
@@ -68,6 +69,62 @@ clearBtn.addEventListener("click", () => {
     searchBox.classList.remove("hasText"); 
     cityInput.focus();
 });
+// ----- Functions for using current Geolocation -----
+function handleGeolocationErrors(error) {
+    switch(error.code) {
+        case error.PERMISSION_DENIED:
+            displayError("Location permission was denied.");
+            break;
+        case error.POSITION_UNAVAILABLE:
+            displayError("Location information is unavailable.");           
+            break;
+        case error.TIMEOUT:
+            displayError("Location request timed out.");
+            break;
+        case error.UNKNOWN_ERROR:
+            displayError("An unknown location error occurred."); 
+            break;
+    }
+}
+
+async function showGeolocationWeather(position) {
+    try {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        
+        // Clear search box
+        cityInput.value = "";
+        searchBox.classList.remove("hasText");
+        suggestions.innerHTML = "";
+        cityInput.blur();
+
+        // Fetch and display weather data
+        const weatherData = await getWeatherDataByCoords(lat, lon);
+        displayWeatherInfo(weatherData);
+        
+        const forecastData = await getForecastData(lat, lon);
+        display7DayForecast(forecastData);
+        
+        const hourlyData = await getHourlyForecastData(lat, lon);
+        displayHourlyForecast(hourlyData);
+        
+    } 
+    catch (error) {
+        console.error("Geolocation Weather Error:", error);
+        displayError("Could not fetch weather data for your location.");
+    }
+}
+
+locationBtn.addEventListener("click", () => {
+    // Check if browser supports geolocation
+    if (!navigator.geolocation) {
+        displayError("Geolocation is not supported by your browser.");
+        return; 
+    }
+    navigator.geolocation.getCurrentPosition(showGeolocationWeather, handleGeolocationErrors);
+});
+// ----- END Functions for using current Geolocation -----
+
 
 weatherForm.addEventListener("submit", async event => {
     event.preventDefault();
