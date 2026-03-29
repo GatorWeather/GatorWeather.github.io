@@ -56,7 +56,8 @@ cityInput.addEventListener("input", async () => {
                 const hourlyData = await getHourlyForecastData(lat, lon);
                 displayHourlyForecast(hourlyData);
             } catch (error) {
-                displayError("Could not fetch weather data for the selected city.");setWeatherTheme
+                console.error(error);
+                displayError("Could not fetch weather data for the selected city.");
             }
         });
 
