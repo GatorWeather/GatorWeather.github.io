@@ -506,7 +506,7 @@ function displayHourlyForecast(hourlyData){
     let startIndex = times.findIndex(time => time >= now.slice(0, 13)+":00");
     if (startIndex === -1) startIndex = 0;
 
-    const endIndex = Math.min(startIndex + 12, times.length);
+    const endIndex = Math.min(startIndex + 24, times.length);
 
     for (let i = startIndex; i < endIndex; i++){
         const hour24 = Number(times[i].slice(11, 13));
