@@ -40,22 +40,25 @@ cityInput.addEventListener("input", async () => {
         div.classList.add("suggestionItem");
         div.textContent = `${city.name}, ${city.state || ""} ${city.country}`;
 
-        div.addEventListener("click", () => {
-            cityInput.value = `${city.name}, ${city.state || ""} ${city.country}`;
-            suggestions.innerHTML = "";
-            cityInput.blur();
+        div.addEventListener("click", async () => {
 
-            getWeatherDataByCoords(city.lat, city.lon)
-                .then(async (weatherData) => {
-                    displayWeatherInfo(weatherData);
-                    const lat = weatherData.coord.lat;
-                    const lon = weatherData.coord.lon;
-                    const forecastData = await getForecastData(lat, lon);
-                    display7DayForecast(forecastData);
-                    const hourlyData = await getHourlyForecastData(lat, lon);
-                    displayHourlyForecast(hourlyData);
-                })
-                .catch(displayError);
+            try {
+                cityInput.value = div.textContent;
+                suggestions.innerHTML = "";
+                cityInput.blur();
+
+                const weatherData = await getWeatherDataByCoords(city.lat, city.lon);
+                displayWeatherInfo(weatherData);
+                const lat = weatherData.coord.lat;
+                const lon = weatherData.coord.lon;
+                const forecastData = await getForecastData(lat, lon);
+                display7DayForecast(forecastData);
+                const hourlyData = await getHourlyForecastData(lat, lon);
+                displayHourlyForecast(hourlyData);
+            } catch (error) {
+                console.error(error);
+                displayError("Could not fetch weather data for the selected city.");
+            }
         });
 
         suggestions.appendChild(div);
@@ -218,9 +221,11 @@ async function getWeatherDataByCoords(lat, lon) {
 function displayWeatherInfo(data){
     
     const {name: city, 
-       main: {temp, feels_like, humidity, pressure},
-       wind: {speed},
-       weather: [{description, id}]} = data;
+        main: {temp, feels_like, humidity, pressure},
+        wind: {speed},
+        weather: [{description, id}],
+        sys: {sunrise, sunset}
+     } = data;
 
     const cityDisplay = document.createElement("h1");
     const tempDisplay = document.createElement("p");
@@ -229,7 +234,7 @@ function displayWeatherInfo(data){
     cityDisplay.textContent = city;
     tempDisplay.textContent = `${temp.toFixed(1)}°F`;
     weatherEmoji.innerHTML = `
-        <div class="emoji">${getWeatherEmoji(id)}</div>
+        <div class="emoji">${getWeatherEmoji(id, sunrise, sunset)}</div>
         <div class="desc">${description}</div>
     `;
 
@@ -243,7 +248,7 @@ function displayWeatherInfo(data){
     card.style.justifyContent = "space-between";
     card.style.alignItems = "center";
 
-    setWeatherTheme(id);
+    setWeatherTheme(id, sunrise, sunset);
 
     const leftSide = document.createElement("div");
     leftSide.style.display = "flex";
@@ -295,48 +300,60 @@ function displayWeatherInfo(data){
     conditionsContainer.appendChild(list);
 }
 
-function getWeatherEmoji(weatherId){
-     
-    switch(true){
-        case (weatherId >= 200 && weatherId < 300):
+function getWeatherEmoji(weatherId, sunrise, sunset){
+     // day/night using sunrise/sunset. 
+
+     const now = Math.floor(Date.now() / 1000);
+     const isDay = (sunrise && sunset) ? (now >= sunrise && now < sunset) : true;
+
+     if (weatherId >= 200 && weatherId < 300)
             return "⛈️";   // thunderstorm
 
-        case (weatherId >= 300 && weatherId < 400):
-            return "🌦️";   // drizzle
-
-        case (weatherId >= 500 && weatherId < 600):
-            return "🌧️";   // rain
-
-        case (weatherId >= 600 && weatherId < 700):
+    if  (weatherId >= 300 && weatherId < 600)
+            return "🌧️";   // drizzle
+            
+    if (weatherId >= 600 && weatherId < 700)
             return "❄️";   // snow
-
-        case (weatherId >= 700 && weatherId < 800):
+    
+    if (weatherId >= 700 && weatherId < 800)
             return "🌫️";   // fog / atmosphere
 
-        case (weatherId === 800):
-            return "☀️";   // clear sky
+    if (weatherId === 800)
+            return isDay ? "☀️" : "🌙";
 
-        case (weatherId >= 801 && weatherId < 810):
-            return "☁️";   // clouds
+    if (weatherId === 801 || weatherId === 802)
+            return isDay ? "🌤️" : "☁️";
 
-        default:
-            return "❓";
-    }
+    if (weatherId === 803 || weatherId === 804)
+            return  isDay ? "🌥️" : "☁️";
+
+        return "❓";   // unknown
 }
 
-function setWeatherTheme(weatherId){
+function setWeatherTheme(weatherId, sunrise, sunset){
+
+    const now = Math.floor(Date.now() / 1000);
+    const isDay = (sunrise && sunset) ? (now >= sunrise && now < sunset) : true;
 
     if(weatherId >= 200 && weatherId < 600){
-        card.style.background = "linear-gradient(#8aa2ff, #5b6ed6)"; // rain
+        card.style.background = isDay 
+        ? "linear-gradient(#8aa2ff, #5b6ed6)" 
+        : "linear-gradient(#4a5a8a, #2f3d66)"; 
     }
     else if(weatherId >= 600 && weatherId < 700){
-        card.style.background = "linear-gradient(#e0f3ff, #b8d9ff)"; // snow
+        card.style.background = isDay
+        ? "linear-gradient(#e0f3ff, #b8d9ff)" 
+        : "linear-gradient(#95a9c7, #63738d)"; 
     }
     else if(weatherId === 800){
-        card.style.background = "linear-gradient(#ffd76a, #ffb347)"; // sunny
+        card.style.background = isDay
+        ? "linear-gradient(#ffd76a, #ffb347)" 
+        : "linear-gradient(#1e2a44, #3b4f7a)"; 
     }
     else if(weatherId > 800){
-        card.style.background = "linear-gradient(#d7d7d7, #a8a8a8)"; // cloudy
+        card.style.background = isDay
+        ? "linear-gradient(#d7d7d7, #a8a8a8)" 
+        : "linear-gradient(#5c6470, #3e4652)"; 
     }
 }
 
@@ -373,7 +390,7 @@ async function getHourlyForecastData(lat, lon){
     const apiUrl = "https://api.open-meteo.com/v1/forecast" +
 "?latitude=" + lat +
 "&longitude=" + lon +
-"&hourly=temperature_2m,weathercode,precipitation_probability" +
+"&hourly=temperature_2m,weathercode,precipitation_probability,is_day" +
 "&temperature_unit=fahrenheit" +
 "&timezone=auto" +
 "&forecast_days=2";
@@ -416,23 +433,37 @@ function display7DayForecast(forecastData){
     const lows = forecastData.daily.temperature_2m_min;
     const codes = forecastData.daily.weathercode;
 
-    for (let i = 0; i < 7; i++){
+    const todayInCity = new Intl.DateTimeFormat("en-CA", {
+        timeZone: forecastData.timezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    }).format(new Date()); 
+
+    // find first weekly forecast date that is today or later
+    let start = dates.findIndex(date => date >= todayInCity);
+
+    if (start === -1) start = 0; // fallback to first date if all are in the past
+
+    // make 7 day forecast items
+    for (let i = start; i < Math.min(start + 7, dates.length); i++){
         const dayCard = document.createElement("div");
         dayCard.classList.add("forecastDay");
 
-        const date = new Date(dates[i]);
-        const dayName = date.toLocaleDateString("en-US", {weekday: "short"});
+        const date = new Date(dates[i] + "T12:00:00"); // use noon to avoid timezone issues
+        const dayName = date.toLocaleDateString("en-US", { weekday: "short" });
 
         const high = Math.round(highs[i]);
         const low = Math.round(lows[i]);
 
-        const emoji = getForecastEmoji(codes[i]);
+        const emoji = getForecastEmoji(codes[i], true);
 
         dayCard.innerHTML = `
             <div class="forecastName">${dayName}</div>
             <div class="forecastEmoji">${emoji}</div>
-            <div class="forecastTemps">${low}° / ${high}°</div>`;
-            row.appendChild(dayCard);
+            <div class="forecastTemps">${low}° / ${high}°</div>
+        `;
+        row.appendChild(dayCard);
     }
     forecastContainer.appendChild(header);
     forecastContainer.appendChild(row);
@@ -451,7 +482,7 @@ function displayHourlyForecast(hourlyData){
     header.innerHTML = `
         <div class="hourlyTime">Time</div>
         <div class="hourlyEmoji">Forecast</div>
-        <div class="hourlyRain">Percipitation</div>
+        <div class="hourlyRain">Precipitation</div>
         <div class="hourlyTemp">Temp</div>
     `;
     hourlyList.appendChild(header);
@@ -460,27 +491,29 @@ function displayHourlyForecast(hourlyData){
     const temps = hourlyData.hourly.temperature_2m;
     const codes = hourlyData.hourly.weathercode;
     const rain = hourlyData.hourly.precipitation_probability;
+    const isDayArr = hourlyData.hourly.is_day;
 
-    // find the first hour past the current time
-    const now = new Date();
-    let startIndex = 0;
+    const now = new Intl.DateTimeFormat("sv-SE", {
+        timeZone: hourlyData.timezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false  
+    }).format(new Date()).replace(" ", "T");
 
-    for (let i = 0; i < times.length; i++){
-        if (new Date(times[i]) >= now){
-            startIndex = i;
-            break;
-        }
-    }
+    let startIndex = times.findIndex(time => time >= now.slice(0, 13)+":00");
+    if (startIndex === -1) startIndex = 0;
 
-    // show next 24 hours
-    const endIndex = Math.min(startIndex + 24, times.length);
+    const endIndex = Math.min(startIndex + 12, times.length);
 
     for (let i = startIndex; i < endIndex; i++){
-        const t = new Date(times[i]);
-        const label = t.toLocaleTimeString("en-US", { hour: "numeric" });
+        const hour24 = Number(times[i].slice(11, 13));
+        const label = `${hour24 % 12 || 12} ${hour24 >= 12 ? "PM" : "AM"}`;
         const rainPct = rain[i];
-
-        const emoji = getForecastEmoji(codes[i]);
+    
+        const emoji = getForecastEmoji(codes[i], isDayArr[i] === 1);
 
         const item = document.createElement("div");
         item.classList.add("hourlyItem");
@@ -494,18 +527,21 @@ function displayHourlyForecast(hourlyData){
     }
 }
 
-function getForecastEmoji(code){
-    if (code === 0) return "☀️"; 
-    if (code === 1 || code === 2) return "🌤️";
+function getForecastEmoji(code, isDay = true){
+    if (code === 0) return isDay ? "☀️" : "🌙";
+    if (code === 1 || code === 2) return isDay ? "🌤️" : "☁️";
     if (code === 3) return "☁️";
     if (code === 45 || code === 48) return "🌫️";
-    if (code === 51 || code === 53 || code === 55) return "🌦️";
-    if (code === 56 || code === 57) return "🌧️";
+    if (code === 51 || code === 53 || code === 55) 
+        return isDay ? "🌦️" : "🌧️";
+    if (code === 56 || code === 57) 
+        return isDay ? "🌦️" : "🌧️";
     if (code === 61 || code === 63 || code === 65) return "🌧️";
     if (code === 66 || code === 67) return "🌧️";
     if(code === 71 || code === 73 || code === 75) return "❄️";
-    if (code === 77) return "🌨️";
-    if (code === 80 || code === 81 || code === 82) return "🌧️";
+    if (code === 77) return "❄️";
+    if (code === 80 || code === 81 || code === 82) 
+        return isDay ? "🌦️" : "🌧️";
     if (code === 85 || code === 86) return "❄️";
     if (code === 95 || code === 96 || code === 99) return "⛈️";
         return "❓";
