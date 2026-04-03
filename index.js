@@ -218,7 +218,7 @@ function displaySearchHistory() {
     searchHistory.forEach (item => {
         const div = document.createElement("div");
         div.classList.add("searchHistoryItem");
-        div.textContent = `${item.name}, ${item.state}, ${item.country}`;
+        div.textContent = `${item.name}${item.state ? ', ' + item.state : ''} ${item.country}`;
 
         // TODO 
         // add name state and country to cityInput once it can allow that longer input
