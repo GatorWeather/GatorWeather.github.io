@@ -66,7 +66,24 @@ weatherForm.addEventListener("submit", async event => {
         );
         if (!zipGeoResponse.ok) throw new Error("Invalid ZIP code or not found.");
         const zipData = await zipGeoResponse.json();
-        fetchAndDisplayAllWeather(zipData.lat, zipData.lon, zipData.name);
+        // zipData does not contain the state name so use get it with the reverse geocoding api
+
+        let stateName = "";
+        try {
+            const reverseGeoResponse = await fetch(
+                `https://api.openweathermap.org/geo/1.0/reverse?lat=${zipData.lat}&lon=${zipData.lon}&limit=1&appid=${apiKey}`
+            );
+            const reverseData = await reverseGeoResponse.json();
+            
+            // if it finds a match, pull the state property
+            if (reverseData.length > 0 && reverseData[0].state) {
+                stateName = reverseData[0].state;
+            }
+        } catch (err) {
+            console.error("Could not fetch state name for ZIP:", err);
+        }
+
+        fetchAndDisplayAllWeather(zipData.lat, zipData.lon, zipData.name, stateName, zipData.country);
         return;
     }
 
@@ -87,7 +104,7 @@ weatherForm.addEventListener("submit", async event => {
         );
 
         if (unique.length === 1) {
-            fetchAndDisplayAllWeather(matches[0].lat, matches[0].lon, matches[0].name);
+            fetchAndDisplayAllWeather(matches[0].lat, matches[0].lon, matches[0].name, matches[0].state, matches[0].country);
         } else {
             // show disambiguation list
             displayCitySuggestions(unique);
@@ -161,14 +178,23 @@ async function showGeolocationWeather(position) {
 
 // ----- Functions for user seach history -----
 
-function saveSearchHistory(name, lat, lon) {
+/*
+    Saves a location to sessionStorage.
+    Keeps most recent searches at the top.
+    Removes duplicates by exact lat and lon, to allow for cities with the same name.
+    Limits history to 5 items.
+*/ 
+function saveSearchHistory(name, state, country, lat, lon) {
     let searchHistory = JSON.parse(sessionStorage.getItem("searchHistory")) || [];
 
-    const newEntry = { name, lat, lon };
+    const newEntry = {name, state, country,  lat, lon};
 
-    searchHistory = searchHistory.filter(item => item.name !== name);
+    // filter out duplicates
+    searchHistory = searchHistory.filter(item => (item.lat != lat && item.lon != lon));
 
     searchHistory.unshift(newEntry);
+
+    // keep only the 5 most recent searches
     searchHistory = searchHistory.slice(0, 5);
 
     sessionStorage.setItem("searchHistory", JSON.stringify(searchHistory));
@@ -192,12 +218,14 @@ function displaySearchHistory() {
     searchHistory.forEach (item => {
         const div = document.createElement("div");
         div.classList.add("searchHistoryItem");
-        div.textContent = item.name;
+        div.textContent = `${item.name}, ${item.state}, ${item.country}`;
 
+        // TODO 
+        // add name state and country to cityInput once it can allow that longer input
         div.addEventListener("click", () => {
             cityInput.value = item.name;
             historyContainer.innerHTML = "";
-            fetchAndDisplayAllWeather(item.lat, item.lon, item.name);
+            fetchAndDisplayAllWeather(item.lat, item.lon, item.name, item.state, item.country);
         });
         historyContainer.appendChild(div);
     }) ;
@@ -542,9 +570,9 @@ function getForecastEmoji(code, isDay = true){
         return "❓";
 };
 
-async function fetchAndDisplayAllWeather(lat, lon, cityName) {
+async function fetchAndDisplayAllWeather(lat, lon, cityName, state, country) {
     try {
-        saveSearchHistory(cityName, lat, lon);
+        saveSearchHistory(cityName, state, country, lat, lon);
 
         const [weatherData, forecastData, hourlyData] = await Promise.all([
             getWeatherDataByCoords(lat, lon),
@@ -557,8 +585,12 @@ async function fetchAndDisplayAllWeather(lat, lon, cityName) {
         displayHourlyForecast(hourlyData);
 
     } catch (error) {
-        console.error(error);
-        displayError("fetchAndDisplayAllWeather failed.");
+        console.error("Weather fetch failed:", error);
+        let message = "fetchAndDisplayAllWeather failed.";
+        if (error.message) {
+            message = error.message;
+        }
+        displayError(message);
     }
 }
 
@@ -577,7 +609,7 @@ function displayCitySuggestions(cities) {
             suggestions.innerHTML = "";
             cityInput.blur();
             
-            fetchAndDisplayAllWeather(city.lat, city.lon, city.name);
+            fetchAndDisplayAllWeather(city.lat, city.lon, city.name, city.state, city.country);
         });
 
         suggestions.appendChild(div);
