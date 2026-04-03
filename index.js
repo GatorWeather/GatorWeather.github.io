@@ -9,10 +9,11 @@ const clearBtn = document.querySelector(".clearBtn");
 const locationBtn = document.querySelector(".locationBtn");
 
 const suggestions = document.querySelector(".suggestions");
+const historyContainer = document.querySelector(".searchHistory");
 
 
 cityInput.addEventListener("input", async () => {
-
+    historyContainer.innerHTML = "";
     const query = cityInput.value;
 
     if(query.length < 2){
@@ -20,58 +21,115 @@ cityInput.addEventListener("input", async () => {
         return;
     }
 
-    const response = await fetch(
-        `https://api.openweathermap.org/geo/1.0/direct?q=${query}&limit=5&appid=${apiKey}`
-    );
-
-    const cities = await response.json();
-
-    suggestions.innerHTML = "";
-
-    cities.forEach(city => {
-
-        if (cityInput.value.length > 0) {
-            searchBox.classList.add("hasText");
-        } else {
-            searchBox.classList.remove("hasText");
-        }
-
-        const div = document.createElement("div");
-        div.classList.add("suggestionItem");
-        div.textContent = `${city.name}, ${city.state || ""} ${city.country}`;
-
-        div.addEventListener("click", async () => {
-
-            try {
-                cityInput.value = div.textContent;
-                suggestions.innerHTML = "";
-                cityInput.blur();
-
-                const weatherData = await getWeatherDataByCoords(city.lat, city.lon);
-                displayWeatherInfo(weatherData);
-                const lat = weatherData.coord.lat;
-                const lon = weatherData.coord.lon;
-                const forecastData = await getForecastData(lat, lon);
-                display7DayForecast(forecastData);
-                const hourlyData = await getHourlyForecastData(lat, lon);
-                displayHourlyForecast(hourlyData);
-            } catch (error) {
-                console.error(error);
-                displayError("Could not fetch weather data for the selected city.");
-            }
-        });
-
-        suggestions.appendChild(div);
-    });
+    try {
+        const response = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${query}&limit=5&appid=${apiKey}`);
+        const cities = await response.json();
+        displayCitySuggestions(cities);
+    } 
+    
+    catch (error) {
+        console.error(error)
+    }
+    
 
 });
 
+cityInput.addEventListener("focus", () => {
+    if (cityInput.value.trim() === "") {
+        displaySearchHistory();
+    }
+});
+
+cityInput.addEventListener("blur", () => {
+    setTimeout(() => {
+        suggestions.innerHTML = "";
+        historyContainer.innerHTML = "";}, 100);
+})
+
+weatherForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    const city = cityInput.value.trim();
+    suggestions.innerHTML = "";
+    cityInput.blur();
+
+    if (!city) {
+        displayError("Please enter a city name or ZIP code");
+        return;
+    }
+
+    try {
+        // zip code search
+    if (!isNaN(city)) {
+        if (city.length !== 5) throw new Error("Invalid ZIP code, enter 5 digits.");
+        const zipGeoResponse = await fetch(
+            `https://api.openweathermap.org/geo/1.0/zip?zip=${city},US&appid=${apiKey}`
+        );
+        if (!zipGeoResponse.ok) throw new Error("Invalid ZIP code or not found.");
+        const zipData = await zipGeoResponse.json();
+        // zipData does not contain the state name so use get it with the reverse geocoding api
+
+        let stateName = "";
+        try {
+            const reverseGeoResponse = await fetch(
+                `https://api.openweathermap.org/geo/1.0/reverse?lat=${zipData.lat}&lon=${zipData.lon}&limit=1&appid=${apiKey}`
+            );
+            const reverseData = await reverseGeoResponse.json();
+            
+            // if it finds a match, pull the state property
+            if (reverseData.length > 0 && reverseData[0].state) {
+                stateName = reverseData[0].state;
+            }
+        } catch (err) {
+            console.error("Could not fetch state name for ZIP:", err);
+        }
+
+        fetchAndDisplayAllWeather(zipData.lat, zipData.lon, zipData.name, stateName, zipData.country);
+        return;
+    }
+
+        // city name — check for duplicates first
+        const geoResponse = await fetch(
+            `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=5&appid=${apiKey}`
+        );
+        const matches = await geoResponse.json();
+
+        if (matches.length === 0) {
+            displayError("City not found");
+            return;
+        }
+
+        // if only one match, or all matches are the same country+state, just use the first
+        const unique = matches.filter((m, i, arr) =>
+            arr.findIndex(x => x.state === m.state && x.country === m.country) === i
+        );
+
+        if (unique.length === 1) {
+            fetchAndDisplayAllWeather(matches[0].lat, matches[0].lon, matches[0].name, matches[0].state, matches[0].country);
+        } else {
+            // show disambiguation list
+            displayCitySuggestions(unique);
+        }
+    } catch (error) {
+        console.error(error);
+        displayError(error.message);
+    }
+});
 
 clearBtn.addEventListener("click", () => {
     cityInput.value = "";
     searchBox.classList.remove("hasText"); 
     cityInput.focus();
 });
+
+locationBtn.addEventListener("click", () => {
+    // Check if browser supports geolocation
+    if (!navigator.geolocation) {
+        displayError("Geolocation is not supported by your browser.");
+        return; 
+    }
+    navigator.geolocation.getCurrentPosition(showGeolocationWeather, handleGeolocationErrors);
+});
+
 // ----- Functions for using current Geolocation -----
 function handleGeolocationErrors(error) {
     switch(error.code) {
@@ -118,95 +176,60 @@ async function showGeolocationWeather(position) {
     }
 }
 
-locationBtn.addEventListener("click", () => {
-    // Check if browser supports geolocation
-    if (!navigator.geolocation) {
-        displayError("Geolocation is not supported by your browser.");
-        return; 
-    }
-    navigator.geolocation.getCurrentPosition(showGeolocationWeather, handleGeolocationErrors);
-});
-// ----- END Functions for using current Geolocation -----
+// ----- Functions for user seach history -----
 
+/*
+    Saves a location to sessionStorage.
+    Keeps most recent searches at the top.
+    Removes duplicates by exact lat and lon, to allow for cities with the same name.
+    Limits history to 5 items.
+*/ 
+function saveSearchHistory(name, state, country, lat, lon) {
+    let searchHistory = JSON.parse(sessionStorage.getItem("searchHistory")) || [];
 
-weatherForm.addEventListener("submit", async event => {
-    event.preventDefault();
-    const city = cityInput.value.trim();
+    const newEntry = {name, state, country,  lat, lon};
+
+    // filter out duplicates
+    searchHistory = searchHistory.filter(item => (item.lat != lat && item.lon != lon));
+
+    searchHistory.unshift(newEntry);
+
+    // keep only the 5 most recent searches
+    searchHistory = searchHistory.slice(0, 5);
+
+    sessionStorage.setItem("searchHistory", JSON.stringify(searchHistory));
+}
+
+function displaySearchHistory() {
+    let searchHistory = JSON.parse(sessionStorage.getItem("searchHistory")) || [];
+
+    historyContainer.innerHTML = "";
     suggestions.innerHTML = "";
-    cityInput.blur();
 
-    if (!city) {
-        displayError("Please enter a city name or ZIP code");
+    if (searchHistory.length === 0) {
+        const message = document.createElement("div");
+        message.classList.add("searchHistoryItem");
+        message.style.opacity = "0.5";
+        message.textContent = "No recent searches";
+        historyContainer.appendChild(message);
         return;
     }
 
-    try {
-        // zip code search
-if (!isNaN(city)) {
-    if (city.length !== 5) throw new Error("Invalid ZIP code, enter 5 digits.");
-    const zipGeoResponse = await fetch(
-        `https://api.openweathermap.org/geo/1.0/zip?zip=${city},US&appid=${apiKey}`
-    );
-    if (!zipGeoResponse.ok) throw new Error("Invalid ZIP code or not found.");
-    const zipData = await zipGeoResponse.json();
-    const weatherData = await getWeatherDataByCoords(zipData.lat, zipData.lon);
-    displayWeatherInfo(weatherData);
-    const forecastData = await getForecastData(weatherData.coord.lat, weatherData.coord.lon);
-    display7DayForecast(forecastData);
-    const hourlyData = await getHourlyForecastData(weatherData.coord.lat, weatherData.coord.lon);
-    displayHourlyForecast(hourlyData);
-    return;
+    searchHistory.forEach (item => {
+        const div = document.createElement("div");
+        div.classList.add("searchHistoryItem");
+        div.textContent = `${item.name}${item.state ? ', ' + item.state : ''} ${item.country}`;
+
+        // TODO 
+        // add name state and country to cityInput once it can allow that longer input
+        div.addEventListener("click", () => {
+            cityInput.value = item.name;
+            historyContainer.innerHTML = "";
+            fetchAndDisplayAllWeather(item.lat, item.lon, item.name, item.state, item.country);
+        });
+        historyContainer.appendChild(div);
+    }) ;
 }
-
-        // city name — check for duplicates first
-        const geoResponse = await fetch(
-            `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=5&appid=${apiKey}`
-        );
-        const matches = await geoResponse.json();
-
-        if (matches.length === 0) {
-            displayError("City not found");
-            return;
-        }
-
-        // if only one match, or all matches are the same country+state, just use the first
-        const unique = matches.filter((m, i, arr) =>
-            arr.findIndex(x => x.state === m.state && x.country === m.country) === i
-        );
-
-        if (unique.length === 1) {
-            const weatherData = await getWeatherDataByCoords(matches[0].lat, matches[0].lon);
-            displayWeatherInfo(weatherData);
-            const forecastData = await getForecastData(weatherData.coord.lat, weatherData.coord.lon);
-            display7DayForecast(forecastData);
-            const hourlyData = await getHourlyForecastData(weatherData.coord.lat, weatherData.coord.lon);
-            displayHourlyForecast(hourlyData);
-        } else {
-            // show disambiguation list
-            unique.forEach(match => {
-                const div = document.createElement("div");
-                div.classList.add("suggestionItem");
-                div.textContent = `${match.name}, ${match.state || ""} ${match.country}`;
-                div.addEventListener("click", () => {
-                    cityInput.value = div.textContent;
-                    suggestions.innerHTML = "";
-                    getWeatherDataByCoords(match.lat, match.lon)
-                        .then(weatherData => {
-                            displayWeatherInfo(weatherData);
-                            return getForecastData(weatherData.coord.lat, weatherData.coord.lon)
-                                .then(display7DayForecast);
-                        })
-                        .catch(displayError);
-                });
-                suggestions.appendChild(div);
-            });
-        }
-    } catch (error) {
-        console.error(error);
-        displayError(error);
-    }
-});
-
 
 // get weather data by coordinates
 async function getWeatherDataByCoords(lat, lon) {
@@ -546,3 +569,49 @@ function getForecastEmoji(code, isDay = true){
     if (code === 95 || code === 96 || code === 99) return "⛈️";
         return "❓";
 };
+
+async function fetchAndDisplayAllWeather(lat, lon, cityName, state, country) {
+    try {
+        saveSearchHistory(cityName, state, country, lat, lon);
+
+        const [weatherData, forecastData, hourlyData] = await Promise.all([
+            getWeatherDataByCoords(lat, lon),
+            getForecastData(lat, lon),
+            getHourlyForecastData(lat, lon)
+        ]);
+
+        displayWeatherInfo(weatherData);
+        display7DayForecast(forecastData);
+        displayHourlyForecast(hourlyData);
+
+    } catch (error) {
+        console.error("Weather fetch failed:", error);
+        let message = "fetchAndDisplayAllWeather failed.";
+        if (error.message) {
+            message = error.message;
+        }
+        displayError(message);
+    }
+}
+
+function displayCitySuggestions(cities) {
+    suggestions.innerHTML = "";
+
+    cities.forEach(city => {
+        const div = document.createElement("div");
+        div.classList.add("suggestionItem");
+        
+        const locationName = `${city.name}, ${city.state || ""} ${city.country}`;
+        div.textContent = locationName;
+
+        div.addEventListener("click", () => {
+            cityInput.value = locationName;
+            suggestions.innerHTML = "";
+            cityInput.blur();
+            
+            fetchAndDisplayAllWeather(city.lat, city.lon, city.name, city.state, city.country);
+        });
+
+        suggestions.appendChild(div);
+    });
+}
