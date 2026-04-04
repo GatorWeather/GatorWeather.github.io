@@ -261,6 +261,186 @@ ul{
     margin-top: 20px;
 }
 
+.healthToggleBtn {
+    width: 560px;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.16);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.healthToggleBtn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-1px);
+}
+
+.toggleLeft {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toggleChevron {
+    transition: transform 0.2s ease;
+}
+
+.healthToggleBtn.open .toggleChevron {
+    transform: rotate(180deg);
+}
+
+.healthIndicatorsContainer {
+    width: 560px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: max-height 0.28s ease, opacity 0.24s ease, transform 0.24s ease, margin-top 0.24s ease;
+}
+
+.healthIndicatorsContainer.show {
+    max-height: 520px;
+    opacity: 1;
+    transform: translateY(0);
+    margin-top: 4px;
+}
+
+.healthIndicatorsPanel {
+    margin-top: 10px;
+    padding: 18px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+    color: white;
+}
+
+.healthIndicatorsHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.healthIndicatorsHeader i {
+    font-size: 1.3rem;
+    opacity: 0.9;
+}
+
+.healthIndicatorsTitle {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.healthIndicatorsSub {
+    margin-top: 4px;
+    font-size: 0.88rem;
+    opacity: 0.85;
+}
+
+.healthIndicatorsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.healthIndicatorCard{
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 18px;
+    padding: 16px;
+    min-height: 134px;
+    box-sizing: border-box;
+}
+
+.healthIndicatorTop {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.healthIndicatorLabelWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.healthIndicatorLabel {
+    font-size: 0.9rem;
+    font-weight: 700;
+    opacity: 0.9;
+}
+
+.healthIndicatorValue {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.healthIndicatorNote {
+    margin: 14px 0 0 0;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    opacity: 0.92;
+}
+
+.healthBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.badge-low,
+.badge-good {
+    background: rgba(34, 197, 94, 0.22);
+}
+
+.badge-moderate {
+    background: rgba(250, 204, 21, 0.24);
+}
+
+.badge-high {
+    background: rgba(251, 146, 60, 0.24);
+}
+
+.badge-very-high {
+    background: rgba(248, 113, 113, 0.24);
+}
+
+.badge-extreme {
+    background: rgba(192, 132, 252, 0.24);
+}
+
+.badge-hazardous {
+    background: rgba(244, 114, 182, 0.24);
+}
+
+.badge-neutral {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+
+
 .forecastContainer {
     width: 600px;
     margin-top: 12px;
@@ -500,6 +680,11 @@ li i {
         width: 100%;
     }
 
+    .healthToggleBtn,
+    .healthIndicatorsContainer {
+        width: 100%;
+    }
+
     .forecastContainer {
         width: 100%;
     }
@@ -512,6 +697,18 @@ li i {
 
     .cityInput {
         width: 260px;
+    }
+
+    .healthIndicatorsGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .healthIndicatorValue {
+        font-size: 1.7rem;
+    }
+
+    .healthIndicatorCard {
+        min-height: 0;
     }
 }
 

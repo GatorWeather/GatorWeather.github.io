@@ -11,10 +11,16 @@ const locationBtn = document.querySelector(".locationBtn");
 const suggestions = document.querySelector(".suggestions");
 const historyContainer = document.querySelector(".searchHistory");
 
+const hourlyPanel = document.querySelector(".hourlyPanel");
+const hourlyList = document.querySelector(".hourlyList");
+const healthToggleBtn = document.querySelector(".healthToggleBtn");
+const healthIndicatorsContainer = document.querySelector(".healthIndicatorsContainer");
+
 
 cityInput.addEventListener("input", async () => {
     historyContainer.innerHTML = "";
     const query = cityInput.value;
+    searchBox.classList.toggle("hasText", query.trim().length > 0);
 
     if(query.length < 2){
         suggestions.innerHTML = "";
@@ -45,6 +51,13 @@ cityInput.addEventListener("blur", () => {
         suggestions.innerHTML = "";
         historyContainer.innerHTML = "";}, 100);
 })
+
+if (healthToggleBtn) {
+    healthToggleBtn.addEventListener("click", () => {
+        const willOpen = !healthIndicatorsContainer.classList.contains("show");
+        setHealthToggleState(willOpen);
+    });
+}
 
 weatherForm.addEventListener("submit", async event => {
     event.preventDefault();
@@ -160,14 +173,7 @@ async function showGeolocationWeather(position) {
         cityInput.blur();
 
         // Fetch and display weather data
-        const weatherData = await getWeatherDataByCoords(lat, lon);
-        displayWeatherInfo(weatherData);
-        
-        const forecastData = await getForecastData(lat, lon);
-        display7DayForecast(forecastData);
-        
-        const hourlyData = await getHourlyForecastData(lat, lon);
-        displayHourlyForecast(hourlyData);
+        await fetchAndDisplayAllWeather(lat, lon, "", "", "");
         
     } 
     catch (error) {
@@ -389,6 +395,12 @@ function displayError(message){
     card.textContent = "";
     card.style.display = "flex";
     card.appendChild(errorDisplay);
+
+    conditionsContainer.textContent = "";
+    forecastWrapper.textContent = "";
+    hourlyList.innerHTML = "";
+    hourlyPanel.style.display = "none";
+    clearHealthIndicators();
 }
 
 async function getForecastData(lat, lon){
@@ -423,6 +435,22 @@ if (!response.ok) {
     throw new Error("Could not fetch hourly forecast data");
 }
 return await response.json();
+}
+
+async function getHealthIndicatorData(lat, lon){
+    const apiUrl = 
+    "https://air-quality-api.open-meteo.com/v1/air-quality" +
+        "?latitude=" + lat +
+        "&longitude=" + lon +
+        "&current=us_aqi,uv_index" +
+        "&timezone=auto" +
+        "&forecast_days=1";
+
+    const response = await fetch(apiUrl);
+    if (!response.ok) {
+        throw new Error("Could not fetch health indicator data");
+    }
+    return await response.json();
 }
 
 function display7DayForecast(forecastData){
@@ -550,6 +578,250 @@ function displayHourlyForecast(hourlyData){
     }
 }
 
+function displayHealthIndicators(healthData) {
+    if (!healthIndicatorsContainer || !healthToggleBtn) return;
+
+    const uvValue = healthData?.current?.uv_index;
+    const aqiValue = healthData?.current?.us_aqi;
+
+    if (!Number.isFinite(uvValue) && !Number.isFinite(aqiValue)) {
+        clearHealthIndicators();
+        return;
+    }
+
+    const uvCategory = getUvCategory(uvValue);
+    const aqiCategory = getAqiCategory(aqiValue);
+    const currentTime = formatHealthTime(healthData?.current?.time);
+
+    healthIndicatorsContainer.innerHTML = `
+        <div class="healthIndicatorsPanel">
+            <div class="healthIndicatorsHeader">
+                <div>
+                    <h2 class="healthIndicatorsTitle">Health Indicators</h2>
+                    <div class="healthIndicatorsSub">Current UV index and Air Quality${currentTime ? ` at ${currentTime}` : ""}</div>
+                </div>
+                <i class="fa-solid fa-heart-pulse"></i>
+            </div>
+
+            <div class="healthIndicatorsGrid">
+                <div class="healthIndicatorCard">
+                    <div class="healthIndicatorTop">
+                        <div class="healthIndicatorLabelWrap">
+                            <div class="healthIndicatorLabel">UV Index</div>
+                            <div class="healthIndicatorValue">${formatUvValue(uvValue)}</div>
+                        </div>
+                        <span class="healthBadge ${getUVBadgeClass(uvCategory.key)}">${uvCategory.label}</span>
+                    </div>
+                    <p class="healthIndicatorNote">${uvCategory.note}</p>
+                </div>
+                
+                <div class="healthIndicatorCard">
+                    <div class="healthIndicatorTop">
+                        <div class="healthIndicatorLabelWrap">
+                            <div class="healthIndicatorLabel">Air Quality Index</div>
+                            <div class="healthIndicatorValue">${formatAQIValue(aqiValue)}</div>
+                        </div>
+                        <span class="healthBadge ${getAQIBadgeClass(aqiCategory.key)}">${aqiCategory.label}</span>
+                    </div>
+                    <p class="healthIndicatorNote">${aqiCategory.note}</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    healthToggleBtn.style.display = "flex";
+    setHealthToggleState(false);
+}
+
+function clearHealthIndicators() {
+    if (!healthIndicatorsContainer || !healthToggleBtn) return;
+
+    healthIndicatorsContainer.innerHTML = "";
+    healthIndicatorsContainer.classList.remove("show");
+    healthToggleBtn.classList.remove("open");
+    healthToggleBtn.style.display = "none";
+    healthToggleBtn.setAttribute("aria-expanded", "false");
+
+    const toggleText = healthToggleBtn.querySelector(".toggleText");
+    if (toggleText) {
+        toggleText.textContent = "Show health indicators";
+    }
+}
+
+function setHealthToggleState(isOpen) {
+    if (!healthIndicatorsContainer || !healthToggleBtn) return;
+
+    healthIndicatorsContainer.classList.toggle("show", isOpen);
+    healthToggleBtn.classList.toggle("open", isOpen);
+    healthToggleBtn.setAttribute("aria-expanded", String(isOpen));
+
+    const toggleText = healthToggleBtn.querySelector(".toggleText");
+    if (toggleText) {
+        toggleText.textContent = isOpen ? "Hide health indicators" : "Show health indicators";
+    }  
+}
+
+function formatHealthTime(isoTime) {
+    if (!isoTime || !isoTime.includes("T")) return "";
+
+    const timePart = isoTime.split("T")[1];
+    const [hourStr, minute = "00"] = timePart.split(":");
+    const hour24 = Number(hourStr);
+
+    if (!Number.isFinite(hour24)) return "";
+
+    const suffix = hour24 >= 12 ? "PM" : "AM";
+    const hour12 = hour24 % 12 || 12;
+    return `${hour12}:${minute} ${suffix}`;
+}
+
+function formatUvValue(value) {
+    if (!Number.isFinite(value)) return "-";
+    return value >= 10 ? Math.round(value) : value.toFixed(1);
+}
+
+function formatAQIValue(value) {
+    if (!Number.isFinite(value)) return "-";
+    return Math.round(value);
+}
+
+function getUvCategory(uv) {
+    if (!Number.isFinite(uv)) {
+        return { 
+            key: "unknown", 
+            label: "Unavailable", 
+            note: "UV index data is unavailable."
+        };
+    }
+
+    if (uv <= 2) {
+        return {
+            key: "low",
+            label: "Low",
+            note: "Minimal sun protection needed."
+        };
+    }
+
+    if (uv <= 5) {
+        return {
+            key: "moderate",
+            label: "Moderate",
+            note: "Consider sunscreen and shade if outside for extended periods."
+        };
+    }
+    if (uv <= 7) {
+        return {
+            key: "high",
+            label: "High",
+            note: "Sun protection is recommended, especially around midday."
+        };
+    }
+    if (uv <= 10) {
+        return {
+            key: "very-high",
+            label: "Very High",
+            note: "Use shade, sunscreen and protective clothing if outside."
+        };
+    }
+    return {
+        key: "extreme",
+        label: "Extreme",
+        note: "Extra sun protection is strongly recommended."
+    };
+}
+
+function getAqiCategory(aqi) {
+    if (!Number.isFinite(aqi)) {
+        return {
+            key: "unknown", 
+            label: "Unavailable",
+            note: "Air quality data is unavailable."
+        };
+    }
+
+    if (aqi <= 50) {
+        return {
+            key: "good",
+            label: "Good",
+            note: "Air quality is satisfactory for most people."
+        };
+    }
+
+    if (aqi <= 100) {
+        return {
+            key: "moderate",
+            label: "Moderate",
+            note: "May affect individuals who are very sensitive to air pollution."
+        };
+    }
+
+    if (aqi <= 150) {
+        return {
+            key: "sensitive",
+            label: "Unhealthy for Sensitive Groups",
+            note: "People with heart or lung conditions, older adults, and children should take precautions."
+        };
+    }
+
+    if (aqi <= 200) {
+        return {
+            key: "unhealthy",
+            label: "Unhealthy",
+            note: "Limit prolonged outdoor exposure."
+        };
+    }
+    
+    if (aqi <= 300) {
+        return {
+            key: "very-unhealthy",
+            label: "Very Unhealthy",
+            note: "Avoid outdoor activities, especially if you have respiratory or heart conditions."
+        };
+    }
+
+    return {
+        key: "hazardous",
+        label: "Hazardous",
+        note: "Avoid outdoor activity. Follow local health advice."
+    };
+}
+
+function getUVBadgeClass(key) {
+    switch(key) {
+        case "low":
+            return "badge-low";
+        case "moderate":
+            return "badge-moderate";
+        case "high":
+            return "badge-high";
+        case "very-high":
+            return "badge-very-high";
+        case "extreme":
+            return "badge-extreme";
+        default:
+            return "badge-neutral";
+    }
+}
+
+function getAQIBadgeClass(key) {
+    switch(key) {
+        case "good":
+            return "badge-good";
+        case "moderate":
+            return "badge-moderate";
+        case "sensitive":
+            return "badge-high";
+        case "unhealthy":
+            return "badge-very-high";
+        case "very-unhealthy":
+            return "badge-extreme";
+        case "hazardous":
+            return "badge-hazardous";
+        default:
+            return "badge-neutral";
+    }
+}
+
 function getForecastEmoji(code, isDay = true){
     if (code === 0) return isDay ? "☀️" : "🌙";
     if (code === 1 || code === 2) return isDay ? "🌤️" : "☁️";
@@ -570,23 +842,49 @@ function getForecastEmoji(code, isDay = true){
         return "❓";
 };
 
+async function renderAllWeather(lat, lon, historyEntry = null) {
+    const [weatherData, forecastData, hourlyData, healthData] = await Promise.all([
+        getWeatherDataByCoords(lat, lon),
+        getForecastData(lat, lon),
+        getHourlyForecastData(lat, lon),
+        getHealthIndicatorData(lat, lon).catch(error => {
+            console.error("Health indicator fetch failed:", error);
+            return null;
+         })
+    ]);
+
+    const resolvedHistoryEntry = historyEntry || {
+        name: weatherData?.name || "",
+        state: "", 
+        country:weatherData?.sys?.country || ""
+    };
+
+    if (resolvedHistoryEntry.name) {
+        saveSearchHistory(
+            resolvedHistoryEntry.name, 
+            resolvedHistoryEntry.state, 
+            resolvedHistoryEntry.country, 
+            lat, 
+            lon
+        );
+    }
+    
+    displayWeatherInfo(weatherData);
+    display7DayForecast(forecastData);
+    displayHourlyForecast(hourlyData);
+    displayHealthIndicators(healthData);
+}
+
 async function fetchAndDisplayAllWeather(lat, lon, cityName, state, country) {
     try {
-        saveSearchHistory(cityName, state, country, lat, lon);
-
-        const [weatherData, forecastData, hourlyData] = await Promise.all([
-            getWeatherDataByCoords(lat, lon),
-            getForecastData(lat, lon),
-            getHourlyForecastData(lat, lon)
-        ]);
-
-        displayWeatherInfo(weatherData);
-        display7DayForecast(forecastData);
-        displayHourlyForecast(hourlyData);
-
+        await renderAllWeather(lat, lon, {
+            name: cityName, 
+            state, 
+            country
+        });
     } catch (error) {
-        console.error("Weather fetch failed:", error);
-        let message = "fetchAndDisplayAllWeather failed.";
+        console.error("Weather Fetch Failed:", error);
+        let message = "fetchAndDisplayAllWeather failed";
         if (error.message) {
             message = error.message;
         }
