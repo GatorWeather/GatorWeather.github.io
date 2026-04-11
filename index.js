@@ -418,11 +418,6 @@ function getForecastMetricOptions() {
     ];
 }
 
-function getMetricLabel(metric) {
-    const match = getForecastMetricOptions().find(option => option.value === metric);
-    return match ? match.label : "Precipitation";
-}
-
 function getMetricValueForHour(hourlyData, metric, index) {
     let value;
     switch(metric) {
