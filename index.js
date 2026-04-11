@@ -16,6 +16,9 @@ const hourlyList = document.querySelector(".hourlyList");
 const healthToggleBtn = document.querySelector(".healthToggleBtn");
 const healthIndicatorsContainer = document.querySelector(".healthIndicatorsContainer");
 
+let selectedHourlyMetric = "precipitation";
+let selectedWeeklyMetric = "precipitation";
+
 
 cityInput.addEventListener("input", async () => {
     historyContainer.innerHTML = "";
@@ -403,6 +406,146 @@ function displayError(message){
     clearHealthIndicators();
 }
 
+function getForecastMetricOptions() {
+    return [
+        { value: "precipitation", label: "Precipitation" },
+        { value: "humidity", label: "Humidity" },
+        { value: "pressure", label: "Pressure" },
+        { value: "wind", label: "Wind" },
+        { value: "feelsLike", label: "Feels Like" },
+        { value: "uvi", label: "UV Index"},
+        { value: "aqi", label: "Air Quality Index"}
+    ];
+}
+
+function getMetricLabel(metric) {
+    const match = getForecastMetricOptions().find(option => option.value === metric);
+    return match ? match.label : "Precipitation";
+}
+
+function getMetricValueForHour(hourlyData, metric, index) {
+    let value;
+    switch(metric) {
+        case "precipitation":
+            value = hourlyData.hourly.precipitation_probability?.[index];
+            return Number.isFinite(value) ? `${Math.round(value)}%` : "--";
+
+        case "humidity":
+            value = hourlyData.hourly.relative_humidity_2m?.[index];
+            return Number.isFinite(value) ? `${Math.round(value)}%` : "--";
+
+        case "pressure":
+            value = hourlyData.hourly.surface_pressure?.[index];
+            return Number.isFinite(value) ? `${Math.round(value)} hPa` : "--";
+
+        case "wind":
+            value = hourlyData.hourly.wind_speed_10m?.[index];
+            return Number.isFinite(value) ? `${Math.round(value)} mph` : "--";
+
+        case "feelsLike":
+            value = hourlyData.hourly.apparent_temperature?.[index];
+            return Number.isFinite(value) ? `${Math.round(value)}°F` : "--";
+
+        case "uvi":
+            value = hourlyData.hourly.uv_index?.[index];
+            return Number.isFinite(value) ? `${Number(value).toFixed(1)}` : "--";
+
+        case "aqi":
+            value = hourlyData.hourly.us_aqi?.[index];
+            return Number.isFinite(value) ? `${Math.round(value)}` : "--";
+
+        default:
+            value = hourlyData.hourly.precipitation_probability?.[index];
+            return Number.isFinite(value) ? `${Math.round(value)}%` : "--";
+    }
+}
+
+function getMetricDailyAverage(hourlyData, metric, dateString) {
+    const times = hourlyData.hourly.time;
+    let total = 0;
+    let count = 0;
+
+    for (let i = 0; i < times.length; i++) {
+        if (!times[i].startsWith(dateString)) continue;
+
+        let value;
+
+        switch(metric) {
+            case "precipitation":
+                value = hourlyData.hourly.precipitation_probability[i];
+                break;
+            case "humidity":
+                value = hourlyData.hourly.relative_humidity_2m[i];
+                break;
+            case "pressure":
+                value = hourlyData.hourly.surface_pressure[i];
+                break;
+            case "wind":
+                value = hourlyData.hourly.wind_speed_10m[i];
+                break;
+            case "feelsLike":
+                value = hourlyData.hourly.apparent_temperature[i];
+                break;
+            case "uvi":
+                value = hourlyData.hourly.uv_index[i];
+                break;
+            case "aqi":
+                value = hourlyData.hourly.us_aqi[i];
+                break;
+            default:
+                value = hourlyData.hourly.precipitation_probability[i];
+        }
+
+        if (Number.isFinite(value)) {
+            total += value;
+            count++;
+        }
+    }
+
+    if (count == 0) return "--";
+    const average = total / count;
+
+    switch (metric) {
+        case "precipitation":
+        case "humidity":
+            return `${Math.round(average)}%`;
+        
+        case "pressure":
+            return `${Math.round(average)} hPa`;
+        
+        case "wind":
+            return `${Math.round(average)} mph`;
+        
+        case "feelsLike":
+            return `${Math.round(average)}°F`;
+        
+        case "uvi":
+            return `${average.toFixed(1)}`;
+
+        case "aqi":
+            return `${Math.round(average)}`;
+        
+        default:
+            return `${Math.round(average)}%`;
+    }
+}
+
+function createMetricDropdown(selectedValue, onChange) {
+    const select = document.createElement("select");
+    select.classList.add("forecastMetricSelect");
+
+    getForecastMetricOptions().forEach(option => {
+        const optionEl = document.createElement("option");
+        optionEl.value = option.value;
+        optionEl.textContent = option.label;
+        optionEl.selected = option.value === selectedValue;
+        select.appendChild(optionEl);
+    });
+
+    select.addEventListener("change", onChange);
+    return select;
+}
+
 async function getForecastData(lat, lon){
     // one call 7 day for case using condinates. 
     const apiUrl = 
@@ -410,9 +553,12 @@ async function getForecastData(lat, lon){
     "?latitude=" + lat +
     "&longitude=" + lon +
     "&daily=weathercode,temperature_2m_max,temperature_2m_min" +
+    "&hourly=precipitation_probability,relative_humidity_2m,surface_pressure,wind_speed_10m,apparent_temperature,uv_index" +
     "&temperature_unit=fahrenheit" +
+    "&wind_speed_unit=mph" +
     "&timezone=auto" +
     "&forecast_days=7";
+
     const response = await fetch(apiUrl);
 
     if (!response.ok) {
@@ -425,8 +571,9 @@ async function getHourlyForecastData(lat, lon){
     const apiUrl = "https://api.open-meteo.com/v1/forecast" +
 "?latitude=" + lat +
 "&longitude=" + lon +
-"&hourly=temperature_2m,weathercode,precipitation_probability,is_day" +
+"&hourly=temperature_2m,weathercode,precipitation_probability,relative_humidity_2m,surface_pressure,wind_speed_10m,apparent_temperature,uv_index,is_day" +
 "&temperature_unit=fahrenheit" +
+"&wind_speed_unit=mph"
 "&timezone=auto" +
 "&forecast_days=2";
 
@@ -453,6 +600,22 @@ async function getHealthIndicatorData(lat, lon){
     return await response.json();
 }
 
+async function getAirQualityForecastData(lat, lon){
+    const apiUrl = 
+    "https://air-quality-api.open-meteo.com/v1/air-quality" +
+        "?latitude=" + lat +
+        "&longitude=" + lon +
+        "&hourly=us_aqi" +
+        "&timezone=auto" +
+        "&forecast_days=7";
+
+    const response = await fetch(apiUrl);
+    if (!response.ok) {
+        throw new Error("Could not fetch air quality forecast data");
+    }
+    return await response.json();
+}
+
 function display7DayForecast(forecastData){
     const oldForecast = document.querySelector(".forecast");
     if (oldForecast){
@@ -469,12 +632,13 @@ function display7DayForecast(forecastData){
     forecastLabel.textContent = "Weekly Forecast";
     forecastLabel.classList.add("forcastTitle");
 
-    const hiLoLabel = document.createElement("div");
-    hiLoLabel.textContent = "Low / High";
-    hiLoLabel.classList.add("hiLoLabel");
+    const weeklyMetricSelect = createMetricDropdown(selectedWeeklyMetric, event => {
+        selectedWeeklyMetric = event.target.value;
+        display7DayForecast(forecastData);
+    });
 
     header.appendChild(forecastLabel);
-    header.appendChild(hiLoLabel);
+    header.appendChild(weeklyMetricSelect);
     
     const row = document.createElement("div");
     row.classList.add("forecastRow");
@@ -506,16 +670,19 @@ function display7DayForecast(forecastData){
 
         const high = Math.round(highs[i]);
         const low = Math.round(lows[i]);
+        const metricAverage = getMetricDailyAverage(forecastData, selectedWeeklyMetric, dates[i]);
 
         const emoji = getForecastEmoji(codes[i], true);
 
         dayCard.innerHTML = `
             <div class="forecastName">${dayName}</div>
             <div class="forecastEmoji">${emoji}</div>
-            <div class="forecastTemps">${low}° / ${high}°</div>
+            <div class="forecastTemps">H: ${high}° <br> L: ${low}°</div>
+            <div class="forecastMetricValue">${metricAverage}</div>
         `;
         row.appendChild(dayCard);
     }
+
     forecastContainer.appendChild(header);
     forecastContainer.appendChild(row);
     forecastWrapper.textContent = "";
@@ -528,20 +695,42 @@ function displayHourlyForecast(hourlyData){
 
     const hourlyList = document.querySelector(".hourlyList");
     hourlyList.innerHTML = "";
+
     const header = document.createElement("div");
     header.classList.add("hourlyHeader");
-    header.innerHTML = `
-        <div class="hourlyTime">Time</div>
-        <div class="hourlyEmoji">Forecast</div>
-        <div class="hourlyRain">Precipitation</div>
-        <div class="hourlyTemp">Temp</div>
-    `;
+
+    const timeHeader = document.createElement("div");
+    timeHeader.classList.add("hourlyTime");
+    timeHeader.textContent = "Time";
+
+    const forecastHeader = document.createElement("div");
+    forecastHeader.classList.add("hourlyEmoji");
+    forecastHeader.textContent = "Forecast";
+
+    const metricHeaderWrap = document.createElement("div");
+    metricHeaderWrap.classList.add("hourlyRain");
+
+    const hourlyMetricSelect = createMetricDropdown(selectedHourlyMetric, event => {
+        selectedHourlyMetric = event.target.value;
+        displayHourlyForecast(hourlyData);
+    });
+
+    metricHeaderWrap.appendChild(hourlyMetricSelect);
+
+    const tempHeader = document.createElement("div");
+    tempHeader.classList.add("hourlyTemp");
+    tempHeader.textContent = "Temp";
+
+    header.appendChild(timeHeader);
+    header.appendChild(forecastHeader);
+    header.appendChild(metricHeaderWrap);
+    header.appendChild(tempHeader);
+
     hourlyList.appendChild(header);
 
     const times = hourlyData.hourly.time;
     const temps = hourlyData.hourly.temperature_2m;
     const codes = hourlyData.hourly.weathercode;
-    const rain = hourlyData.hourly.precipitation_probability;
     const isDayArr = hourlyData.hourly.is_day;
 
     const now = new Intl.DateTimeFormat("sv-SE", {
@@ -562,16 +751,17 @@ function displayHourlyForecast(hourlyData){
     for (let i = startIndex; i < endIndex; i++){
         const hour24 = Number(times[i].slice(11, 13));
         const label = `${hour24 % 12 || 12} ${hour24 >= 12 ? "PM" : "AM"}`;
-        const rainPct = rain[i];
-    
+        
+        const selectedMetricValue = getMetricValueForHour(hourlyData, selectedHourlyMetric, i);
+
         const emoji = getForecastEmoji(codes[i], isDayArr[i] === 1);
 
         const item = document.createElement("div");
         item.classList.add("hourlyItem");
-        item.innerHTML = `  
+        item.innerHTML = `
             <div class="hourlyTime">${label}</div>
             <div class="hourlyEmoji">${emoji}</div>
-            <div class="hourlyRain">${rainPct}%</div>
+            <div class="hourlyRain">${selectedMetricValue}</div>
             <div class="hourlyTemp">${Math.round(temps[i])}°F</div>
         `;
         hourlyList.appendChild(item);
@@ -843,15 +1033,26 @@ function getForecastEmoji(code, isDay = true){
 };
 
 async function renderAllWeather(lat, lon, historyEntry = null) {
-    const [weatherData, forecastData, hourlyData, healthData] = await Promise.all([
+    const [weatherData, forecastData, hourlyData, healthData, airQualityForecastData] = await Promise.all([
         getWeatherDataByCoords(lat, lon),
         getForecastData(lat, lon),
         getHourlyForecastData(lat, lon),
         getHealthIndicatorData(lat, lon).catch(error => {
             console.error("Health indicator fetch failed:", error);
             return null;
-         })
+         }),
+        getAirQualityForecastData(lat, lon).catch(error => {
+            console.error("Air quality forecast fetch failed:", error);
+            return null;
+         }) 
     ]);
+
+    if (airQualityForecastData?.hourly?.us_aqi) {
+        forecastData.hourly.us_aqi = airQualityForecastData.hourly.us_aqi;
+
+        hourlyData.hourly.us_aqi = airQualityForecastData.hourly.us_aqi;
+        hourlyData.hourly.time = airQualityForecastData.hourly.time;
+    }
 
     const resolvedHistoryEntry = historyEntry || {
         name: weatherData?.name || "",

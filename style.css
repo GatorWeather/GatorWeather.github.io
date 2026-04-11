@@ -489,7 +489,7 @@ li i {
 /* 7 day forecast styles */
 .forecast {
     width: 100%;
-    margin-top: 18px;
+    margin-top: 0px;
 }
 
 .forecastHeader {
@@ -521,14 +521,14 @@ li i {
 }
 
 .forecastDay {
-    min-width: 58px;
+    min-width: 60px;
     flex: 1;
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 12px;
-    padding: 8px;
+    padding: 10px 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     text-align: center;
     color: white;
@@ -553,7 +553,7 @@ li i {
 .hourlyPanel {
     display: none; /* will show when hourly data is loaded */
     width: 96%;
-    height: 650px;
+    height: 735px;
     padding: 16px;
     border-radius: 18px;
     background: rgba(255, 255, 255, 0.12);
@@ -592,7 +592,7 @@ li i {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 10px 12px;
+    padding: 10px 0px;
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.12);
     border: 1px solid rgba(255, 255, 255, 0.18);
@@ -602,16 +602,18 @@ li i {
 .hourlyTime {
     font-weight: 700;
     font-size: 0.95rem;
-    min-width: 50px;
+    min-width: 60px;
     text-align: left;
+    padding-left: 10px;
 }
 
 /* center emoji */ 
 .hourlyEmoji {
     font-weight: 700;
     font-size: 0.95rem;
-    min-width: 28px;
+    min-width: 22px;
     text-align: right;
+    padding-right: 10px;
 }
 
 /* right side temp */
@@ -625,7 +627,7 @@ li i {
 .hourlyRain {
     font-weight: 700;
     font-size: 0.95rem;
-    min-width: 90px;
+    min-width: 110px;
     text-align: center;
     opacity: 0.9;
 }
@@ -633,10 +635,34 @@ li i {
 .hourlyHeader{
     display: flex;
     align-items: center;
-    gap: 13px;
     font-size: 0.8rem;
     font-weight: 700;
     opacity: 0.85;
+}
+
+.forecastMetricSelect {
+    padding: 0px 0px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    outline: none;
+    cursor: pointer;
+    text-align: center;
+}
+
+.forecastMetricSelect option {
+    color: black;
+}
+
+.forecastMetricValue {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    opacity: 0.92;
 }
 
 /* ── Tablet Style (768px) ── */
