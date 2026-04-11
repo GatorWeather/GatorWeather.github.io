@@ -568,7 +568,7 @@ async function getHourlyForecastData(lat, lon){
 "&longitude=" + lon +
 "&hourly=temperature_2m,weathercode,precipitation_probability,relative_humidity_2m,surface_pressure,wind_speed_10m,apparent_temperature,uv_index,is_day" +
 "&temperature_unit=fahrenheit" +
-"&wind_speed_unit=mph"
+"&wind_speed_unit=mph" +
 "&timezone=auto" +
 "&forecast_days=2";
 
@@ -1046,7 +1046,6 @@ async function renderAllWeather(lat, lon, historyEntry = null) {
         forecastData.hourly.us_aqi = airQualityForecastData.hourly.us_aqi;
 
         hourlyData.hourly.us_aqi = airQualityForecastData.hourly.us_aqi;
-        hourlyData.hourly.time = airQualityForecastData.hourly.time;
     }
 
     const resolvedHistoryEntry = historyEntry || {
