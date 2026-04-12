@@ -266,7 +266,6 @@ function displayWeatherInfo(data, locationData = null){
 
     cityDisplay.textContent = locationData ? (locationData.name || city) : city;
 
-    let displayName = city;
     let regionParts = [];
     if (locationData && locationData.state) regionParts.push(locationData.state);
     if (locationData && locationData.country) {
