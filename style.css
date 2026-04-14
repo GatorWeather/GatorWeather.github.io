@@ -818,3 +818,192 @@ li i {
         font-size: 1rem;
     }
 }
+
+/* Climate Tracker */
+.climateTrackerBtn {
+    width: 560px;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.16);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.climateTrackerBtn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-1px);
+}
+
+.climateTrackerBtn.open .toggleChevron {
+    transform: rotate(180deg);
+}
+
+.climateTrackerContainer {
+    width: 560px;
+    max-height: 0;
+    overflow: visible;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: max-height 0.4s ease, opacity 0.3s ease, transform 0.3s ease;
+    margin-bottom: 40px;
+}
+
+#climateCanvas {
+    width: 100% !important;
+    height: 500px !important;
+    display: block;
+}
+
+.climateTrackerContainer.show {
+    max-height: 900px;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+
+
+.climateTrackerPanel {
+    padding: 18px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+    color: white;
+    overflow: visible;
+}
+
+.climateTrackerTitle {
+    margin: 0 0 4px 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.climateTrackerSub {
+    font-size: 0.88rem;
+    opacity: 0.75;
+    margin-bottom: 16px;
+}
+
+/* tablet */
+@media (max-width: 768px) {
+    .climateTrackerBtn,
+    .climateTrackerContainer {
+        width: 100%;
+    }
+}
+
+/* Climate Tracker fullscreen modal */
+#climateModal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.climateModalOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+}
+
+.climateModalContent {
+    position: relative;
+    z-index: 1;
+    width: 95vw;
+    height: 90vh;
+    background: rgba(15, 25, 60, 0.97);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 24px;
+    padding: 28px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.climateModalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.climateModalCloseBtn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 999px;
+    color: white;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.climateModalCloseBtn:hover {
+    background: rgba(255,255,255,0.22);
+}
+
+#climateModalCanvas {
+    flex: 1;
+    width: 100% !important;
+    min-height: 0;
+}
+
+.climateFullscreenBtn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 999px;
+    color: white;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.climateFullscreenBtn:hover {
+    background: rgba(255,255,255,0.22);
+}
+
+.climateTrackerHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.climateTodayBox {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    font-size: 0.95rem;
+    color: white;
+}
+
+.climateDivider {
+    opacity: 0.4;
+}
