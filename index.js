@@ -1088,6 +1088,7 @@ async function renderAllWeather(lat, lon, historyEntry = null) {
     display7DayForecast(forecastData);
     displayHourlyForecast(hourlyData);
     displayHealthIndicators(healthData);
+    showClimateTrackerBtn(lat, lon, weatherData?.main?.temp ?? null);
 }
 
 async function fetchAndDisplayAllWeather(lat, lon, cityName, state, country) {
@@ -1127,4 +1128,394 @@ function displayCitySuggestions(cities) {
 
         suggestions.appendChild(div);
     });
+}
+
+// ── Climate Tracker ──
+const climateTrackerBtn = document.querySelector(".climateTrackerBtn");
+const climateTrackerContainer = document.querySelector(".climateTrackerContainer");
+
+let climateChart = null;
+let climateTrackerLat = null;
+let climateTrackerLon = null;
+let climateTrackerCurrentTemp = null;
+let climateTrackerTodayAvg = null;
+
+if (climateTrackerBtn && climateTrackerContainer) {
+    climateTrackerBtn.addEventListener("click", async () => {
+        const isOpen = climateTrackerContainer.classList.contains("show");
+
+        if (isOpen) {
+            climateTrackerContainer.classList.remove("show");
+            climateTrackerBtn.classList.remove("open");
+        } else {
+            climateTrackerContainer.classList.add("show");
+            climateTrackerBtn.classList.add("open");
+
+            setTimeout(async () => {
+                if (climateTrackerLat && !climateChart) {
+                    await buildClimateChart(climateTrackerLat, climateTrackerLon);
+                } else if (climateChart) {
+                    climateChart.resize();
+                }
+            }, 300);
+        }
+    });
+}
+
+// ── ERA DATA ──
+const ERAS = [];
+
+// 1940-1980: deep navy blue
+for (let y = 1940; y <= 1980; y++) {
+    ERAS.push({ label: y.toString(), start: y, end: y, color: "rgba(71, 112, 235, 0.6)", borderWidth: 1 });
+}
+// 1981-2000: steel blue
+for (let y = 1981; y <= 2000; y++) {
+    ERAS.push({ label: y.toString(), start: y, end: y, color: "rgba(70, 170, 230, 0.7)", borderWidth: 1 });
+}
+// 2001-2010: teal
+for (let y = 2001; y <= 2010; y++) {
+    ERAS.push({ label: y.toString(), start: y, end: y, color: "rgba(0, 200, 180, 0.75)", borderWidth: 1 });
+}
+// 2011-2020: lime green
+for (let y = 2011; y <= 2020; y++) {
+    ERAS.push({ label: y.toString(), start: y, end: y, color: "rgba(24, 228, 17, 0.9)", borderWidth: 1.5 });
+}
+// 2021-2024: yellow
+for (let y = 2021; y <= 2024; y++) {
+    ERAS.push({ label: y.toString(), start: y, end: y, color: "rgba(240, 210, 0, 0.9)", borderWidth: 2 });
+}
+// 2025: bold orange
+ERAS.push({ label: "2025", start: 2025, end: 2025, color: "rgb(255, 72, 0)", borderWidth: 3.5 });
+// 2026: bold red
+ERAS.push({ label: "2026", start: 2026, end: 2026, color: "rgb(190, 0, 0)", borderWidth: 3.5 });
+
+async function fetchEraTemps(lat, lon, startYear, endYear) {
+    const today = new Date();
+    
+    // cap end date to yesterday to avoid requesting future data
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const maxDate = yesterday.toISOString().split("T")[0];
+
+    const startDate = `${startYear}-01-01`;
+    const rawEnd = `${Math.min(endYear, today.getFullYear())}-12-31`;
+    const endDate = rawEnd > maxDate ? maxDate : rawEnd;
+
+    // if start is after end, skip entirely
+    if (startDate > endDate) {
+        console.warn(`Skipping ${startYear}-${endYear}: no data available yet`);
+        return new Array(12).fill(null);
+    }
+
+    const url =
+        "https://archive-api.open-meteo.com/v1/archive" +
+        `?latitude=${lat}&longitude=${lon}` +
+        `&start_date=${startDate}&end_date=${endDate}` +
+        "&daily=temperature_2m_mean" +
+        "&temperature_unit=fahrenheit" +
+        "&timezone=auto";
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Climate fetch failed for ${startYear}-${endYear}`);
+    const json = await res.json();
+
+    const monthTotals = new Array(12).fill(0);
+    const monthCounts = new Array(12).fill(0);
+
+    json.daily.time.forEach((dateStr, i) => {
+        const val = json.daily.temperature_2m_mean[i];
+        if (val === null) return;
+        const month = new Date(dateStr + "T12:00:00").getMonth();
+        monthTotals[month] += val;
+        monthCounts[month]++;
+    });
+
+    return monthTotals.map((total, i) =>
+        monthCounts[i] > 0 ? parseFloat((total / monthCounts[i]).toFixed(1)) : null
+    );
+}
+
+
+function buildDayLabels() {
+    return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+}
+
+async function buildClimateChart(lat, lon) {
+    const container = climateTrackerContainer.querySelector(".climateTrackerPanel");
+
+    if (container) container.innerHTML = `
+        <p class="climateTrackerTitle">Climate Tracker</p>
+        <p class="climateTrackerSub">Loading historical data — this may take a moment...</p>
+    `;
+
+    const promises = ERAS.map(era =>
+        fetchEraTemps(lat, lon, era.start, era.end)
+            .then(temps => ({
+                label: era.label,
+                data: temps,
+                borderColor: era.color,
+                backgroundColor: "transparent",
+                borderWidth: era.borderWidth,
+                pointRadius: 0,
+                tension: 0.3,
+            }))
+            .catch(e => {
+                console.warn(`Skipping era ${era.label}:`, e);
+                return null;
+            })
+    );
+
+    const results = await Promise.all(promises);
+    const datasets = results.filter(d => d !== null);
+
+    if (container) container.innerHTML = `
+        <div class="climateTrackerHeader">
+            <div>
+                <p class="climateTrackerTitle">Climate Tracker</p>
+                <p class="climateTrackerSub">Monthly average temperature by era (°F)</p>
+            </div>
+            <button class="climateFullscreenBtn" title="Fullscreen">
+                <i class="fa-solid fa-expand"></i>
+            </button>
+        </div>
+        <canvas id="climateCanvas"></canvas>
+    `;
+
+    await new Promise(requestAnimationFrame);
+
+    const canvas = document.getElementById("climateCanvas");
+    if (!canvas) {
+        console.error("Canvas not found!");
+        return;
+    }
+
+    const ctx = canvas.getContext("2d");
+
+    if (climateChart) {
+        climateChart.destroy();
+        climateChart = null;
+    }
+
+    climateChart = new Chart(ctx, {
+        type: "line",
+        data: { labels: buildDayLabels(), datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: {
+                        color: "white",
+                        font: { family: "DM Sans", size: 11 },
+                        generateLabels: () => [
+                            { text: "1940–1980", strokeStyle: "rgba(20, 60, 180, 0.9)", fillStyle: "rgba(20, 60, 180, 0.9)", lineWidth: 2, hidden: false },
+                            { text: "1981–2000", strokeStyle: "rgba(70, 170, 230, 0.9)", fillStyle: "rgba(70, 170, 230, 0.9)", lineWidth: 2, hidden: false },
+                            { text: "2001–2010", strokeStyle: "rgba(0, 200, 180, 0.9)",  fillStyle: "rgba(0, 200, 180, 0.9)",  lineWidth: 2, hidden: false },
+                            { text: "2011–2020", strokeStyle: "rgba(75, 225, 20, 0.9)",  fillStyle: "rgba(75, 225, 20, 0.9)",  lineWidth: 2, hidden: false },
+                            { text: "2021–2024", strokeStyle: "rgba(240, 210, 0, 1)",    fillStyle: "rgba(240, 210, 0, 1)",    lineWidth: 2, hidden: false },
+                            { text: "2025",      strokeStyle: "rgb(255, 120, 0)",        fillStyle: "rgb(255, 120, 0)",        lineWidth: 3, hidden: false },
+                            { text: "2026",      strokeStyle: "rgb(190, 0, 0)",          fillStyle: "rgb(190, 0, 0)",          lineWidth: 3, hidden: false },
+                        ]
+                    }
+                },
+                tooltip: {enabled: false, intersect: false }
+            },
+            scales: {
+                x: {
+                    ticks: { color: "rgba(255,255,255,0.7)", font: { size: 10 } },
+                    grid:  { color: "rgba(255,255,255,0.08)" }
+                },
+                y: {
+                    ticks: { color: "rgba(255,255,255,0.7)", font: { size: 10 },
+                             callback: v => `${v}°F` },
+                    grid:  { color: "rgba(255,255,255,0.08)" }
+                }
+            }
+        }
+    });
+
+    setTimeout(() => climateChart.resize(), 300);
+
+    const fullscreenBtn = document.querySelector(".climateFullscreenBtn");
+    if (fullscreenBtn) {
+        fullscreenBtn.addEventListener("click", openClimateModal);
+    }
+
+    // now fetch and inject comparison box below header
+    try {
+        const todayAvg = await fetchTodayHistoricalAvg(lat, lon);
+        window.climateTrackerTodayAvg = todayAvg;
+        const comparisonHTML = buildTodayComparisonHTML(climateTrackerCurrentTemp, todayAvg);
+        if (comparisonHTML) {
+            const header = container.querySelector(".climateTrackerHeader");
+            if (header) {
+                header.insertAdjacentHTML("afterend", comparisonHTML);
+            }
+        }
+    } catch (e) {
+        console.warn("Could not fetch today's historical average:", e);
+    }
+}
+
+function openClimateModal() {
+    const modal = document.getElementById("climateModal");
+    const modalCanvas = document.getElementById("climateModalCanvas");
+    modal.style.display = "flex";
+    document.body.style.overflow = "hidden";
+
+    // insert comparison box between header and canvas
+    const existing = modal.querySelector(".climateTodayBox");
+    if (!existing) {
+        const box = document.createElement("div");
+        box.innerHTML = buildTodayComparisonHTML(climateTrackerCurrentTemp, window.climateTrackerTodayAvg);
+        if (box.firstElementChild) {
+            modalCanvas.parentNode.insertBefore(box.firstElementChild, modalCanvas);
+        }
+    }
+
+    // destroy old modal chart if exists
+    if (window.climateModalChart) {
+        window.climateModalChart.destroy();
+        window.climateModalChart = null;
+    }
+
+    const ctx = modalCanvas.getContext("2d");
+    window.climateModalChart = new Chart(ctx, {
+        type: "line",
+        data: climateChart.data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: {
+                        color: "white",
+                        font: { family: "DM Sans", size: 13 },
+                        generateLabels: (chart) => {
+                            const eraLabels = [
+                                { text: "1940–1980", color: "rgba(20, 60, 180, 0.9)" },
+                                { text: "1981–2000", color: "rgba(70, 170, 230, 0.9)" },
+                                { text: "2001–2010", color: "rgba(0, 200, 180, 0.9)" },
+                                { text: "2011–2020", color: "rgba(75, 225, 20, 0.9)" },
+                                { text: "2021–2024", color: "rgba(240, 210, 0, 1)" },
+                                { text: "2025",      color: "rgb(255, 120, 0, 1)" },
+                                { text: "2026",      color: "rgba(220, 20, 20, 1)" },
+                            ];
+                            return eraLabels.map((era, i) => ({
+                                text: era.text,
+                                strokeStyle: era.color,
+                                fillStyle: era.color,
+                                lineWidth: 2,
+                                hidden: false,
+                                index: i,
+                            }));
+                        }
+                    }
+                },
+                tooltip: { enabled: false, intersect: false }
+            },
+            scales: {
+                x: {
+                    ticks: { color: "rgba(255,255,255,0.7)", font: { size: 12 } },
+                    grid:  { color: "rgba(255,255,255,0.08)" }
+                },
+                y: {
+                    ticks: { color: "rgba(255,255,255,0.7)", font: { size: 12 },
+                             callback: v => `${v}°F` },
+                    grid:  { color: "rgba(255,255,255,0.08)" }
+                }
+            }
+        }
+    });
+}
+function closeClimateModal() {
+    document.getElementById("climateModal").style.display = "none";
+    document.body.style.overflow = "";
+    if (window.climateModalChart) {
+        window.climateModalChart.destroy();
+        window.climateModalChart = null;
+    }
+}
+
+async function fetchTodayHistoricalAvg(lat, lon) {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+
+    // build a 30 year average using a +/- 7 day window around today's date
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+
+    const startDate = `${currentYear - 30}-01-01`;
+    const endDate = `${currentYear - 1}-12-31`;
+
+    const url =
+        "https://archive-api.open-meteo.com/v1/archive" +
+        `?latitude=${lat}&longitude=${lon}` +
+        `&start_date=${startDate}&end_date=${endDate}` +
+        "&daily=temperature_2m_mean" +
+        "&temperature_unit=fahrenheit" +
+        "&timezone=auto";
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Could not fetch historical average");
+    const json = await res.json();
+
+    // only use dates within +/- 7 days of today's month/day across all years
+    const todayMMDD = `${month}-${day}`;
+    const target = new Date(`2000-${month}-${day}`); // reference year for comparison
+
+    const vals = [];
+    json.daily.time.forEach((dateStr, i) => {
+        const val = json.daily.temperature_2m_mean[i];
+        if (val === null) return;
+        const parts = dateStr.split("-");
+        const mmdd = `${parts[1]}-${parts[2]}`;
+        const d = new Date(`2000-${mmdd}`);
+        const diffDays = Math.abs((d - target) / (1000 * 60 * 60 * 24));
+        if (diffDays <= 7) vals.push(val);
+    });
+
+    if (vals.length === 0) return null;
+    return parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1));
+}
+
+function buildTodayComparisonHTML(currentTemp, avgTemp) {
+    if (currentTemp == null || avgTemp == null) return "";
+
+    const today = new Date();
+    const monthName = today.toLocaleDateString("en-US", { month: "short" });
+    const day = today.getDate();
+    const diff = parseFloat((currentTemp - avgTemp).toFixed(1));
+    const sign = diff > 0 ? "+" : "";
+    const diffText = `${sign}${diff}°F`;
+
+    let diffColor = "rgba(255,255,255,0.8)";
+    if (diff > 3) diffColor = "rgb(255, 120, 0)";
+    else if (diff < -3) diffColor = "rgba(70, 170, 230, 0.9)";
+
+    return `
+        <div class="climateTodayBox">
+            <span>Today: <strong>${currentTemp.toFixed(1)}°F</strong></span>
+            <span class="climateDivider">|</span>
+            <span>Avg for ${monthName} ${day}: <strong>${avgTemp}°F</strong></span>
+            <span class="climateDivider">|</span>
+            <span style="color: ${diffColor}"><strong>${diffText} ${diff > 0 ? "above" : "below"} normal</strong></span>
+        </div>
+    `;
+}
+
+function showClimateTrackerBtn(lat, lon, currentTemp) {
+    climateTrackerLat = lat;
+    climateTrackerLon = lon;
+    climateTrackerCurrentTemp = currentTemp;
+    climateChart = null;
+    climateTrackerContainer.classList.remove("show");
+    climateTrackerBtn.classList.remove("open");
+    climateTrackerContainer.innerHTML = `<div class="climateTrackerPanel"></div>`;
+    climateTrackerBtn.style.display = "flex";
 }
