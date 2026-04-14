@@ -250,20 +250,33 @@ async function getWeatherDataByCoords(lat, lon) {
     return await response.json();
 }
 
-function displayWeatherInfo(data){
+function displayWeatherInfo(data, locationData = null){
     
     const {name: city, 
         main: {temp, feels_like, humidity, pressure},
         wind: {speed},
         weather: [{description, id}],
-        sys: {sunrise, sunset}
+        sys: {sunrise, sunset, country}
      } = data;
 
     const cityDisplay = document.createElement("h1");
+    const regionDisplay = document.createElement("div");
     const tempDisplay = document.createElement("p");
     const weatherEmoji = document.createElement("p");
 
-    cityDisplay.textContent = city;
+    cityDisplay.textContent = locationData ? (locationData.name || city) : city;
+
+    let regionParts = [];
+    if (locationData && locationData.state) regionParts.push(locationData.state);
+    if (locationData && locationData.country) {
+        regionParts.push(locationData.country);
+    } else if (country) {
+        regionParts.push(country);
+    }
+
+    regionDisplay.textContent = regionParts.join(", ");
+    regionDisplay.classList.add("regionDisplay");
+
     tempDisplay.textContent = `${temp.toFixed(1)}°F`;
     weatherEmoji.innerHTML = `
         <div class="emoji">${getWeatherEmoji(id, sunrise, sunset)}</div>
@@ -290,8 +303,15 @@ function displayWeatherInfo(data){
     leftSide.appendChild(tempDisplay);
 
     const rightSide = document.createElement("div");
-    rightSide.style.textAlign = "right";
+    rightSide.style.textAlign = "left";
+    rightSide.style.display = "flex";
+    rightSide.style.flexDirection = "column";
+    rightSide.style.justifyContent = "center";
+    
     rightSide.appendChild(cityDisplay);
+    if (regionParts.length > 0) {
+        rightSide.appendChild(regionDisplay);
+    }
 
     card.appendChild(rightSide);    
     card.appendChild(leftSide);
@@ -1064,7 +1084,7 @@ async function renderAllWeather(lat, lon, historyEntry = null) {
         );
     }
     
-    displayWeatherInfo(weatherData);
+    displayWeatherInfo(weatherData, resolvedHistoryEntry);
     display7DayForecast(forecastData);
     displayHourlyForecast(hourlyData);
     displayHealthIndicators(healthData);
