@@ -1367,19 +1367,14 @@ function openClimateModal() {
     document.body.style.overflow = "hidden";
 
     // insert comparison box between header and canvas
+    // always remove old comparison box and insert fresh one
     const existing = modal.querySelector(".climateTodayBox");
-    if (!existing) {
-        const box = document.createElement("div");
-        box.innerHTML = buildTodayComparisonHTML(climateTrackerCurrentTemp, window.climateTrackerTodayAvg);
-        if (box.firstElementChild) {
-            modalCanvas.parentNode.insertBefore(box.firstElementChild, modalCanvas);
-        }
-    }
+    if (existing) existing.remove();
 
-    // destroy old modal chart if exists
-    if (window.climateModalChart) {
-        window.climateModalChart.destroy();
-        window.climateModalChart = null;
+    const box = document.createElement("div");
+    box.innerHTML = buildTodayComparisonHTML(climateTrackerCurrentTemp, window.climateTrackerTodayAvg);
+    if (box.firstElementChild) {
+        modalCanvas.parentNode.insertBefore(box.firstElementChild, modalCanvas);
     }
 
     const ctx = modalCanvas.getContext("2d");

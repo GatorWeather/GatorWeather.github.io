@@ -1016,3 +1016,8 @@ li i {
 .climateDivider {
     opacity: 0.4;
 }
+
+.climateModalContent .climateTrackerTitle,
+.climateModalContent .climateTrackerSub {
+    color: white !important;
+}
