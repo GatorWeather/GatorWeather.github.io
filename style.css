@@ -780,6 +780,7 @@ li i {
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    color: white;
 }
 
 .climateModalHeader {
