@@ -1,3 +1,4 @@
+/* global Chart */
 const weatherForm = document.querySelector(".weatherForm");
 const cityInput = document.querySelector(".cityInput");
 const card = document.querySelector(".card");
@@ -1138,7 +1139,6 @@ let climateChart = null;
 let climateTrackerLat = null;
 let climateTrackerLon = null;
 let climateTrackerCurrentTemp = null;
-let climateTrackerTodayAvg = null;
 
 if (climateTrackerBtn && climateTrackerContainer) {
     climateTrackerBtn.addEventListener("click", async () => {
@@ -1391,7 +1391,7 @@ function openClimateModal() {
                     labels: {
                         color: "white",
                         font: { family: "DM Sans", size: 13 },
-                        generateLabels: (chart) => {
+                        generateLabels: () => {
                             const eraLabels = [
                                 { text: "1940–1980", color: "rgba(20, 60, 180, 0.9)" },
                                 { text: "1981–2000", color: "rgba(70, 170, 230, 0.9)" },
@@ -1428,14 +1428,14 @@ function openClimateModal() {
         }
     });
 }
-function closeClimateModal() {
+window.closeClimateModal = function() {
     document.getElementById("climateModal").style.display = "none";
     document.body.style.overflow = "";
     if (window.climateModalChart) {
         window.climateModalChart.destroy();
         window.climateModalChart = null;
     }
-}
+};
 
 async function fetchTodayHistoricalAvg(lat, lon) {
     const today = new Date();
@@ -1461,7 +1461,6 @@ async function fetchTodayHistoricalAvg(lat, lon) {
     const json = await res.json();
 
     // only use dates within +/- 7 days of today's month/day across all years
-    const todayMMDD = `${month}-${day}`;
     const target = new Date(`2000-${month}-${day}`); // reference year for comparison
 
     const vals = [];
