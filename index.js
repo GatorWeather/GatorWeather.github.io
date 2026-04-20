@@ -573,7 +573,7 @@ async function getForecastData(lat, lon){
     "&temperature_unit=fahrenheit" +
     "&wind_speed_unit=mph" +
     "&timezone=auto" +
-    "&forecast_days=7";
+    "&forecast_days=10";
 
     const response = await fetch(apiUrl);
 
@@ -645,7 +645,7 @@ function display7DayForecast(forecastData){
     header.classList.add("forecastHeader");
 
     const forecastLabel = document.createElement("h2");
-    forecastLabel.textContent = "Weekly Forecast";
+    forecastLabel.textContent = "10-Day Forecast";
     forecastLabel.classList.add("forcastTitle");
 
     const weeklyMetricSelect = createMetricDropdown(selectedWeeklyMetric, event => {
@@ -677,7 +677,7 @@ function display7DayForecast(forecastData){
     if (start === -1) start = 0; // fallback to first date if all are in the past
 
     // make 7 day forecast items
-    for (let i = start; i < Math.min(start + 7, dates.length); i++){
+    for (let i = start; i < Math.min(start + 10, dates.length); i++){
         const dayCard = document.createElement("div");
         dayCard.classList.add("forecastDay");
 
