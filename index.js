@@ -1311,13 +1311,20 @@ async function buildClimateChart(lat, lon) {
                         color: "white",
                         font: { family: "DM Sans", size: 11 },
                         generateLabels: () => [
-                            { text: "1940–1980", strokeStyle: "rgba(20, 60, 180, 0.9)", fillStyle: "rgba(20, 60, 180, 0.9)", lineWidth: 2, hidden: false },
-                            { text: "1981–2000", strokeStyle: "rgba(70, 170, 230, 0.9)", fillStyle: "rgba(70, 170, 230, 0.9)", lineWidth: 2, hidden: false },
-                            { text: "2001–2010", strokeStyle: "rgba(0, 200, 180, 0.9)",  fillStyle: "rgba(0, 200, 180, 0.9)",  lineWidth: 2, hidden: false },
-                            { text: "2011–2020", strokeStyle: "rgba(75, 225, 20, 0.9)",  fillStyle: "rgba(75, 225, 20, 0.9)",  lineWidth: 2, hidden: false },
-                            { text: "2021–2024", strokeStyle: "rgba(240, 210, 0, 1)",    fillStyle: "rgba(240, 210, 0, 1)",    lineWidth: 2, hidden: false },
-                            { text: "2025",      strokeStyle: "rgb(255, 120, 0)",        fillStyle: "rgb(255, 120, 0)",        lineWidth: 3, hidden: false },
-                            { text: "2026",      strokeStyle: "rgb(190, 0, 0)",          fillStyle: "rgb(190, 0, 0)",          lineWidth: 3, hidden: false },
+                            { text: "1940–1980", strokeStyle: "rgba(20, 60, 180, 0.9)", fillStyle: "rgba(20, 60, 180, 0.9)",
+                                 lineWidth: 2, hidden: false, fontColor: "#ffffff" },
+                            { text: "1981–2000", strokeStyle: "rgba(70, 170, 230, 0.9)", fillStyle: "rgba(70, 170, 230, 0.9)",
+                                 lineWidth: 2, hidden: false, fontColor: "#ffffff" },
+                            { text: "2001–2010", strokeStyle: "rgba(0, 200, 180, 0.9)",  fillStyle: "rgba(0, 200, 180, 0.9)",
+                                  lineWidth: 2, hidden: false, fontColor: "#ffffff" },
+                            { text: "2011–2020", strokeStyle: "rgba(75, 225, 20, 0.9)",  fillStyle: "rgba(75, 225, 20, 0.9)",
+                                  lineWidth: 2, hidden: false, fontColor: "#ffffff" },
+                            { text: "2021–2024", strokeStyle: "rgba(240, 210, 0, 1)",    fillStyle: "rgba(240, 210, 0, 1)",
+                                    lineWidth: 2, hidden: false, fontColor: "#ffffff" },
+                            { text: "2025",      strokeStyle: "rgb(255, 120, 0)",        fillStyle: "rgb(255, 120, 0)",
+                                        lineWidth: 3, hidden: false, fontColor: "#ffffff" },
+                            { text: "2026",      strokeStyle: "rgb(190, 0, 0)",          fillStyle: "rgb(190, 0, 0)",
+                                        lineWidth: 3, hidden: false, fontColor: "#ffffff" },
                         ]
                     }
                 },
@@ -1393,13 +1400,13 @@ function openClimateModal() {
                         font: { family: "DM Sans", size: 13 },
                         generateLabels: () => {
                             const eraLabels = [
-                                { text: "1940–1980", color: "rgba(20, 60, 180, 0.9)" },
-                                { text: "1981–2000", color: "rgba(70, 170, 230, 0.9)" },
-                                { text: "2001–2010", color: "rgba(0, 200, 180, 0.9)" },
-                                { text: "2011–2020", color: "rgba(75, 225, 20, 0.9)" },
-                                { text: "2021–2024", color: "rgba(240, 210, 0, 1)" },
-                                { text: "2025",      color: "rgb(255, 120, 0, 1)" },
-                                { text: "2026",      color: "rgba(220, 20, 20, 1)" },
+                                { text: "1940–1980", color: "rgba(20, 60, 180, 0.9)", fontColor: "#ffffff" },
+                                { text: "1981–2000", color: "rgba(70, 170, 230, 0.9)", fontColor: "#ffffff" },
+                                { text: "2001–2010", color: "rgba(0, 200, 180, 0.9)", fontColor: "#ffffff" },
+                                { text: "2011–2020", color: "rgba(75, 225, 20, 0.9)", fontColor: "#ffffff" },
+                                { text: "2021–2024", color: "rgba(240, 210, 0, 1)", fontColor: "#ffffff" },
+                                { text: "2025",      color: "rgb(255, 120, 0, 1)", fontColor: "#ffffff" },
+                                { text: "2026",      color: "rgba(220, 20, 20, 1)", fontColor: "#ffffff" },
                             ];
                             return eraLabels.map((era, i) => ({
                                 text: era.text,
@@ -1408,6 +1415,7 @@ function openClimateModal() {
                                 lineWidth: 2,
                                 hidden: false,
                                 index: i,
+                                fontColor: "#ffffff"
                             }));
                         }
                     }
