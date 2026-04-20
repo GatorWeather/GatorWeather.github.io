@@ -20,6 +20,227 @@ body {
     pointer-events: none;
 }
 
+.favoritesToggleBtn {
+    width: 46px;
+    height: 46px;
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.14);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.favoritesToggleBtn:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateY(-1px);
+}
+
+.favoritesDrawerOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 10002;
+}
+
+.favoritesDrawerOverlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.favoritesDrawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 340px;
+    max-width: 88vw;
+    height: 100vh;
+    padding: 24px 18px;
+    box-sizing: border-box;
+    background: rgba(18, 27, 58, 0.94);
+    border-right: 1px solid rgba(255,255,255,0.16);
+    box-shadow: 18px 0 40px rgba(0,0,0,0.28);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 10003;
+    overflow-y: auto;
+    color: white;
+}
+
+.favoritesDrawer.open {
+    transform: translateX(0);
+}
+
+.favoritesDrawerHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.favoritesDrawerHeader h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    color: white;
+}
+
+.favoritesDrawerHeader p {
+    margin: 4px 0 0 0;
+    font-size: 0.92rem;
+    opacity: 0.8;
+    color: white;
+}
+
+.favoritesCloseBtn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    cursor: pointer;
+}
+
+.favoritesCloseBtn:hover {
+    background: rgba(255,255,255,0.18);
+}
+
+.favoritesList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.favoriteEmptyState {
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    font-size: 0.95rem;
+    opacity: 0.85;
+    color: white;
+}
+
+.favoriteCityCard {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.16);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.16);
+}
+
+.favoriteCityMain {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.favoriteCityName {
+    font-size: 1rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 4px;
+}
+
+.favoriteCityRegion {
+    font-size: 0.88rem;
+    opacity: 0.82;
+    color: white;
+    margin-bottom: 10px;
+}
+
+.favoriteWeatherPreview {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    font-size: 0.9rem;
+    color: white;
+}
+
+.favoriteWeatherPreview .emoji {
+    font-size: 1.15rem;
+}
+
+.favoriteWeatherPreview .temp {
+    font-weight: 700;
+}
+
+.favoriteWeatherPreview .desc {
+    opacity: 0.82;
+    text-transform: capitalize;
+}
+
+.favoriteDeleteBtn {
+    align-self: flex-start;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    color: white;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.favoriteDeleteBtn:hover {
+    background: rgba(255,255,255,0.16);
+}
+
+.favoriteActionBar {
+    width: 560px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: flex-start;
+    margin-top: -6px;
+}
+
+.saveFavoriteBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.16);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.saveFavoriteBtn:hover {
+    background: rgba(255,255,255,0.18);
+    transform: translateY(-1px);
+}
+
+.saveFavoriteBtn.saved {
+    background: rgba(255, 105, 180, 0.18);
+    border-color: rgba(255, 160, 210, 0.32);
+}
+
 .weatherForm {
     margin: 100px 0 16px 0;
 }
@@ -948,6 +1169,9 @@ li i {
         margin-bottom: 40px;
     }
 
+    .favoriteActionBar {
+        width: 100%;
+    }
 }
 
 /* ── Phone portrait (390px) ── */
@@ -1047,5 +1271,19 @@ li i {
 
     .conditionsContainer{
         margin-top: 0px;
+    }
+
+    .favoritesDrawer {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .favoriteActionBar {
+        width: 100%;
+    }
+
+    .saveFavoriteBtn {
+        width: 100%;
+        justify-content: center;
     }
 }

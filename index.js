@@ -12,6 +12,14 @@ const locationBtn = document.querySelector(".locationBtn");
 const suggestions = document.querySelector(".suggestions");
 const historyContainer = document.querySelector(".searchHistory");
 
+const favoritesToggleBtn = document.querySelector(".favoritesToggleBtn");
+const favoritesDrawer = document.querySelector(".favoritesDrawer");
+const favoritesDrawerOverlay = document.querySelector(".favoritesDrawerOverlay");
+const favoritesCloseBtn = document.querySelector(".favoritesCloseBtn");
+const favoritesList = document.querySelector(".favoritesList");
+const saveFavoriteBtn = document.querySelector(".saveFavoriteBtn");
+const favoriteActionBar = document.querySelector(".favoriteActionBar");
+
 const hourlyPanel = document.querySelector(".hourlyPanel");
 const hourlyList = document.querySelector(".hourlyList");
 const healthToggleBtn = document.querySelector(".healthToggleBtn");
@@ -19,6 +27,9 @@ const healthIndicatorsContainer = document.querySelector(".healthIndicatorsConta
 
 let selectedHourlyMetric = "precipitation";
 let selectedWeeklyMetric = "precipitation";
+
+const FAVORITES_STORAGE_KEY = "weatherFavorites";
+let currentWeatherLocation = null;
 
 
 cityInput.addEventListener("input", async () => {
@@ -61,6 +72,22 @@ if (healthToggleBtn) {
         const willOpen = !healthIndicatorsContainer.classList.contains("show");
         setHealthToggleState(willOpen);
     });
+}
+
+if (favoritesToggleBtn) {
+    favoritesToggleBtn.addEventListener("click", openFavoritesDrawer);
+}
+
+if (favoritesCloseBtn) {
+    favoritesCloseBtn.addEventListener("click", closeFavoritesDrawer);
+}
+
+if (favoritesDrawerOverlay) {
+    favoritesDrawerOverlay.addEventListener("click", closeFavoritesDrawer);
+}
+
+if (saveFavoriteBtn) {
+    saveFavoriteBtn.addEventListener("click", saveCurrentCityToFavorites);
 }
 
 weatherForm.addEventListener("submit", async event => {
@@ -241,6 +268,157 @@ function displaySearchHistory() {
     }) ;
 }
 
+function getSavedFavorites() {
+    return JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY)) || [];
+}
+
+function saveFavorites(favorites) {
+    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
+}
+
+function buildFavoriteId(lat, lon) {
+    return `${Number(lat).toFixed(4)},${Number(lon).toFixed(4)}`;
+}
+
+function isFavorite(lat, lon) {
+    const favorites = getSavedFavorites();
+    const id = buildFavoriteId(lat, lon);
+    return favorites.some(item => item.id === id);
+}
+
+function updateSaveFavoriteButtonState(saved) {
+    if (!saveFavoriteBtn) return;
+
+    saveFavoriteBtn.classList.toggle("saved", saved);
+    saveFavoriteBtn.innerHTML = saved
+        ? `<i class="fa-solid fa-heart-circle-check"></i><span>Saved to favorites</span>`
+        : `<i class="fa-solid fa-heart"></i><span>Save current city</span>`;
+}
+
+function openFavoritesDrawer() {
+    favoritesDrawer.classList.add("open");
+    favoritesDrawerOverlay.classList.add("show");
+    favoritesDrawer.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+}
+
+function closeFavoritesDrawer() {
+    favoritesDrawer.classList.remove("open");
+    favoritesDrawerOverlay.classList.remove("show");
+    favoritesDrawer.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+}
+
+function deleteFavorite(id) {
+    const favorites = getSavedFavorites().filter(item => item.id !== id);
+    saveFavorites(favorites);
+    renderFavoritesList();
+
+    if (currentWeatherLocation && currentWeatherLocation.lat != null && currentWeatherLocation.lon != null) {
+        updateSaveFavoriteButtonState(isFavorite(currentWeatherLocation.lat, currentWeatherLocation.lon));
+    }
+}
+
+function saveCurrentCityToFavorites() {
+    if (!currentWeatherLocation) return;
+    if (currentWeatherLocation.lat == null || currentWeatherLocation.lon == null) return;
+
+    const favorites = getSavedFavorites();
+    const id = buildFavoriteId(currentWeatherLocation.lat, currentWeatherLocation.lon);
+
+    if (favorites.some(item => item.id === id)) {
+        updateSaveFavoriteButtonState(true);
+        return;
+    }
+
+    favorites.unshift({
+        id,
+        name: currentWeatherLocation.name,
+        state: currentWeatherLocation.state,
+        country: currentWeatherLocation.country,
+        lat: currentWeatherLocation.lat,
+        lon: currentWeatherLocation.lon,
+        temp: currentWeatherLocation.temp,
+        description: currentWeatherLocation.description,
+        weatherId: currentWeatherLocation.weatherId,
+        sunrise: currentWeatherLocation.sunrise,
+        sunset: currentWeatherLocation.sunset
+    });
+
+    saveFavorites(favorites);
+    renderFavoritesList();
+    updateSaveFavoriteButtonState(true);
+}
+
+function updateFavoriteWeatherPreview(lat, lon, partialData) {
+    const favorites = getSavedFavorites();
+    const id = buildFavoriteId(lat, lon);
+
+    const updated = favorites.map(item => {
+        if (item.id !== id) return item;
+        return { ...item, ...partialData };
+    });
+
+    saveFavorites(updated);
+    renderFavoritesList();
+}
+
+function renderFavoritesList() {
+    if (!favoritesList) return;
+
+    const favorites = getSavedFavorites();
+    favoritesList.innerHTML = "";
+
+    if (favorites.length === 0) {
+        favoritesList.innerHTML = `
+            <div class="favoriteEmptyState">
+                No saved cities yet. Search for a city and tap <strong>Save current city</strong>.
+            </div>
+        `;
+        return;
+    }
+
+    favorites.forEach(item => {
+        const card = document.createElement("div");
+        card.classList.add("favoriteCityCard");
+
+        const main = document.createElement("div");
+        main.classList.add("favoriteCityMain");
+
+        const regionText = [item.state, item.country].filter(Boolean).join(", ");
+        const emoji = getWeatherEmoji(item.weatherId || 800, item.sunrise, item.sunset);
+
+        main.innerHTML = `
+            <div class="favoriteCityName">${item.name}</div>
+            <div class="favoriteCityRegion">${regionText}</div>
+            <div class="favoriteWeatherPreview">
+                <span class="emoji">${emoji}</span>
+                <span class="temp">${Number.isFinite(item.temp) ? `${Math.round(item.temp)}°F` : "--"}</span>
+                <span class="desc">${item.description || "Weather preview"}</span>
+            </div>
+        `;
+
+        main.addEventListener("click", () => {
+            closeFavoritesDrawer();
+            fetchAndDisplayAllWeather(item.lat, item.lon, item.name, item.state, item.country);
+        });
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.classList.add("favoriteDeleteBtn");
+        deleteBtn.type = "button";
+        deleteBtn.innerHTML = `<i class="fa-solid fa-trash"></i>`;
+
+        deleteBtn.addEventListener("click", event => {
+            event.stopPropagation();
+            deleteFavorite(item.id);
+        });
+
+        card.appendChild(main);
+        card.appendChild(deleteBtn);
+        favoritesList.appendChild(card);
+    });
+}
+
 // get weather data by coordinates
 async function getWeatherDataByCoords(lat, lon) {
     const apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=imperial&appid=${apiKey}`;
@@ -259,6 +437,19 @@ function displayWeatherInfo(data, locationData = null){
         weather: [{description, id}],
         sys: {sunrise, sunset, country}
      } = data;
+    
+    currentWeatherLocation = {
+        name: locationData ? (locationData.name || city) : city,
+        state: locationData?.state || "",
+        country: locationData?.country || country || "",
+        lat: locationData?.lat ?? null,
+        lon: locationData?.lon ?? null,
+        temp,
+        description,
+        weatherId: id,
+        sunrise,
+        sunset
+};
 
     const cityDisplay = document.createElement("h1");
     const regionDisplay = document.createElement("div");
@@ -351,6 +542,17 @@ function displayWeatherInfo(data, locationData = null){
     
     conditionsContainer.textContent = "";
     conditionsContainer.appendChild(list);
+
+    if (favoriteActionBar) {
+        favoriteActionBar.style.display = "flex";
+    }
+
+    if (currentWeatherLocation.lat != null && currentWeatherLocation.lon != null) {
+        updateSaveFavoriteButtonState(isFavorite(currentWeatherLocation.lat, currentWeatherLocation.lon));
+    } 
+    else {
+        updateSaveFavoriteButtonState(false);
+    }
 }
 
 function getWeatherEmoji(weatherId, sunrise, sunset){
@@ -425,6 +627,10 @@ function displayError(message){
     hourlyList.innerHTML = "";
     hourlyPanel.style.display = "none";
     clearHealthIndicators();
+
+    if (favoriteActionBar) {
+        favoriteActionBar.style.display = "none";
+    }
 }
 
 function getForecastMetricOptions() {
@@ -1071,9 +1277,14 @@ async function renderAllWeather(lat, lon, historyEntry = null) {
 
     const resolvedHistoryEntry = historyEntry || {
         name: weatherData?.name || "",
-        state: "", 
-        country:weatherData?.sys?.country || ""
+        state: "",
+        country: weatherData?.sys?.country || "",
+        lat,
+        lon
     };
+
+    resolvedHistoryEntry.lat = lat;
+    resolvedHistoryEntry.lon = lon;
 
     if (resolvedHistoryEntry.name) {
         saveSearchHistory(
@@ -1086,6 +1297,15 @@ async function renderAllWeather(lat, lon, historyEntry = null) {
     }
     
     displayWeatherInfo(weatherData, resolvedHistoryEntry);
+    if (isFavorite(lat, lon)) {
+        updateFavoriteWeatherPreview(lat, lon, {
+            temp: weatherData?.main?.temp ?? null,
+            description: weatherData?.weather?.[0]?.description || "",
+            weatherId: weatherData?.weather?.[0]?.id || 800,
+            sunrise: weatherData?.sys?.sunrise,
+            sunset: weatherData?.sys?.sunset
+        });
+    }
     display7DayForecast(forecastData);
     displayHourlyForecast(hourlyData);
     displayHealthIndicators(healthData);
@@ -1521,3 +1741,6 @@ function showClimateTrackerBtn(lat, lon, currentTemp) {
     climateTrackerContainer.innerHTML = `<div class="climateTrackerPanel"></div>`;
     climateTrackerBtn.style.display = "flex";
 }
+
+renderFavoritesList();
+updateSaveFavoriteButtonState(false);

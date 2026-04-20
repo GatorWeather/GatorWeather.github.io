@@ -24,6 +24,22 @@
     </div>
 </div>
 <body>
+    
+    <div class="favoritesDrawerOverlay"></div>
+
+    <aside class="favoritesDrawer" aria-hidden="true">
+        <div class="favoritesDrawerHeader">
+            <div>
+                <h2>Saved Cities</h2>
+                <p>Your favorite weather locations</p>
+            </div>
+            <button class="favoritesCloseBtn" type="button" aria-label="Close saved cities">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="favoritesList"></div>
+    </aside>
     <img src="EngineeringGator_original_transparent.png" class="logo" alt="Gator Engineering logo">
 
     <form class="weatherForm">
@@ -41,6 +57,18 @@
     <div class="mainLayout">
         <div class="leftColumn">
             <div class="card" style="display: none"></div>
+
+            <div class="favoriteActionBar" style="display: none;">
+                <button class="favoritesToggleBtn" type="button" aria-label="Open saved cities">
+                    <i class="fa-solid fa-list"></i>
+                </button>
+                
+                <button class="saveFavoriteBtn" type="button">
+                    <i class="fa-solid fa-heart"></i>
+                    <span>Save current city</span>
+                </button>
+            </div>
+
             <div class="conditionsContainer"></div>
 
             <button class="healthToggleBtn" type="button" aria-expanded="false" style="display: none;">
