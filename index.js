@@ -1382,38 +1382,9 @@ if (climateTrackerBtn && climateTrackerContainer) {
     });
 }
 
-// ── ERA DATA ──
-const ERAS = [];
 
-// 1940-1980: deep navy blue
-for (let y = 1940; y <= 1980; y++) {
-    ERAS.push({ label: y.toString(), start: y, end: y, color: "rgba(71, 112, 235, 0.6)", borderWidth: 1 });
-}
-// 1981-2000: steel blue
-for (let y = 1981; y <= 2000; y++) {
-    ERAS.push({ label: y.toString(), start: y, end: y, color: "rgba(70, 170, 230, 0.7)", borderWidth: 1 });
-}
-// 2001-2010: teal
-for (let y = 2001; y <= 2010; y++) {
-    ERAS.push({ label: y.toString(), start: y, end: y, color: "rgba(0, 200, 180, 0.75)", borderWidth: 1 });
-}
-// 2011-2020: lime green
-for (let y = 2011; y <= 2020; y++) {
-    ERAS.push({ label: y.toString(), start: y, end: y, color: "rgba(24, 228, 17, 0.9)", borderWidth: 1.5 });
-}
-// 2021-2024: yellow
-for (let y = 2021; y <= 2024; y++) {
-    ERAS.push({ label: y.toString(), start: y, end: y, color: "rgba(240, 210, 0, 0.9)", borderWidth: 2 });
-}
-// 2025: bold orange
-ERAS.push({ label: "2025", start: 2025, end: 2025, color: "rgb(255, 72, 0)", borderWidth: 3.5 });
-// 2026: bold red
-ERAS.push({ label: "2026", start: 2026, end: 2026, color: "rgb(190, 0, 0)", borderWidth: 3.5 });
-
-async function fetchEraTemps(lat, lon, startYear, endYear) {
+async function fetchEraRawByYear(lat, lon, startYear, endYear) {
     const today = new Date();
-    
-    // cap end date to yesterday to avoid requesting future data
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     const maxDate = yesterday.toISOString().split("T")[0];
@@ -1422,11 +1393,7 @@ async function fetchEraTemps(lat, lon, startYear, endYear) {
     const rawEnd = `${Math.min(endYear, today.getFullYear())}-12-31`;
     const endDate = rawEnd > maxDate ? maxDate : rawEnd;
 
-    // if start is after end, skip entirely
-    if (startDate > endDate) {
-        console.warn(`Skipping ${startYear}-${endYear}: no data available yet`);
-        return new Array(12).fill(null);
-    }
+    if (startDate > endDate) return {};
 
     const url =
         "https://archive-api.open-meteo.com/v1/archive" +
@@ -1437,79 +1404,220 @@ async function fetchEraTemps(lat, lon, startYear, endYear) {
         "&timezone=auto";
 
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`Climate fetch failed for ${startYear}-${endYear}`);
+    if (!res.ok) throw new Error(`Fetch failed for ${startYear}-${endYear}`);
     const json = await res.json();
 
-    const monthTotals = new Array(12).fill(0);
-    const monthCounts = new Array(12).fill(0);
-
+    // group daily data by year, then average by month
+    const byYear = {};
     json.daily.time.forEach((dateStr, i) => {
         const val = json.daily.temperature_2m_mean[i];
         if (val === null) return;
-        const month = new Date(dateStr + "T12:00:00").getMonth();
-        monthTotals[month] += val;
-        monthCounts[month]++;
+        const d = new Date(dateStr + "T12:00:00");
+        const year = d.getFullYear().toString();
+        const month = d.getMonth();
+        if (!byYear[year]) byYear[year] = { totals: new Array(12).fill(0), counts: new Array(12).fill(0) };
+        byYear[year].totals[month] += val;
+        byYear[year].counts[month]++;
     });
 
-    return monthTotals.map((total, i) =>
-        monthCounts[i] > 0 ? parseFloat((total / monthCounts[i]).toFixed(1)) : null
-    );
+    const result = {};
+    for (const [year, data] of Object.entries(byYear)) {
+        result[year] = data.totals.map((total, i) =>
+            data.counts[i] > 0 ? parseFloat((total / data.counts[i]).toFixed(1)) : null
+        );
+    }
+    return result;
 }
 
+async function fetchAllYearData(lat, lon) {
+    const eraGroups = [
+        { start: 1940, end: 1980 },
+        { start: 1981, end: 2000 },
+        { start: 2001, end: 2010 },
+        { start: 2011, end: 2020 },
+        { start: 2021, end: 2024 },
+        { start: 2025, end: 2025 },
+        { start: 2026, end: 2026 },
+    ];
 
-function buildDayLabels() {
-    return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const result = {};
+
+    for (const group of eraGroups) {
+        try {
+            const yearData = await fetchEraRawByYear(lat, lon, group.start, group.end);
+            Object.assign(result, yearData);
+        } catch (e) {
+            console.warn(`Skipping group ${group.start}-${group.end}:`, e);
+        }
+        await new Promise(r => setTimeout(r, 300));
+    }
+
+    return result;
 }
 
-async function buildClimateChart(lat, lon) {
-    const container = climateTrackerContainer.querySelector(".climateTrackerPanel");
+function computeConsolidatedDatasets(rawCache) {
+    const eraGroups = [
+        { label: "1940–1980", start: 1940, end: 1980, color: "rgba(71, 112, 235, 0.8)",  borderWidth: 2 },
+        { label: "1981–2000", start: 1981, end: 2000, color: "rgba(70, 170, 230, 0.8)",  borderWidth: 2 },
+        { label: "2001–2010", start: 2001, end: 2010, color: "rgba(0, 200, 180, 0.8)",   borderWidth: 2 },
+        { label: "2011–2020", start: 2011, end: 2020, color: "rgba(24, 228, 17, 0.9)",   borderWidth: 2 },
+        { label: "2021–2024", start: 2021, end: 2024, color: "rgba(240, 210, 0, 0.9)",   borderWidth: 2 },
+        { label: "2025",      start: 2025, end: 2025, color: "rgb(255, 72, 0)",           borderWidth: 3.5 },
+        { label: "2026",      start: 2026, end: 2026, color: "rgb(190, 0, 0)",            borderWidth: 3.5 },
+    ];
 
-    if (container) container.innerHTML = `
-        <p class="climateTrackerTitle">Climate Tracker</p>
-        <p class="climateTrackerSub">Loading historical data — this may take a moment...</p>
-    `;
+    return eraGroups.map(era => {
+        const monthTotals = new Array(12).fill(0);
+        const monthCounts = new Array(12).fill(0);
 
-    const promises = ERAS.map(era =>
-        fetchEraTemps(lat, lon, era.start, era.end)
-            .then(temps => ({
-                label: era.label,
-                data: temps,
+        for (let y = era.start; y <= era.end; y++) {
+            const yearData = rawCache[y.toString()];
+            if (!yearData) continue;
+            yearData.forEach((val, month) => {
+                if (val === null) return;
+                monthTotals[month] += val;
+                monthCounts[month]++;
+            });
+        }
+
+        return {
+            label: era.label,
+            data: monthTotals.map((total, i) =>
+                monthCounts[i] > 0 ? parseFloat((total / monthCounts[i]).toFixed(1)) : null
+            ),
+            borderColor: era.color,
+            backgroundColor: "transparent",
+            borderWidth: era.borderWidth,
+            pointRadius: 0,
+            tension: 0.3,
+        };
+    });
+}
+
+function computeExpandedDatasets(rawCache) {
+    const eraColors = [
+        { start: 1940, end: 1980, color: "rgba(71, 112, 235, 0.5)",  borderWidth: 1 },
+        { start: 1981, end: 2000, color: "rgba(70, 170, 230, 0.55)", borderWidth: 1 },
+        { start: 2001, end: 2010, color: "rgba(0, 200, 180, 0.6)",   borderWidth: 1 },
+        { start: 2011, end: 2020, color: "rgba(24, 228, 17, 0.7)",   borderWidth: 1 },
+        { start: 2021, end: 2024, color: "rgba(240, 210, 0, 0.8)",   borderWidth: 1.5 },
+        { start: 2025, end: 2025, color: "rgb(255, 72, 0)",           borderWidth: 3.5 },
+        { start: 2026, end: 2026, color: "rgb(190, 0, 0)",            borderWidth: 3.5 },
+    ];
+
+    const datasets = [];
+
+    for (const era of eraColors) {
+        for (let y = era.start; y <= era.end; y++) {
+            const yearData = rawCache[y.toString()];
+            if (!yearData) continue;
+            datasets.push({
+                label: y.toString(),
+                data: yearData,
                 borderColor: era.color,
                 backgroundColor: "transparent",
                 borderWidth: era.borderWidth,
                 pointRadius: 0,
                 tension: 0.3,
-            }))
-            .catch(e => {
-                console.warn(`Skipping era ${era.label}:`, e);
-                return null;
-            })
-    );
+            });
+        }
+    }
 
-    const results = await Promise.all(promises);
-    const datasets = results.filter(d => d !== null);
+    return datasets;
+}
+
+
+async function buildClimateChart(lat, lon) {
+    const container = climateTrackerContainer.querySelector(".climateTrackerPanel");
 
     if (container) container.innerHTML = `
+        <div class="climateTrackerTitle">Climate Tracker</div>
+        <div class="climateTrackerSub">Loading historical data — this may take a moment...</div>
+    `;
+
+    // fetch all raw year data — 7 API calls total, cached forever
+    climateRawCache = await fetchAllYearData(lat, lon);
+    console.log("Raw cache keys:", Object.keys(climateRawCache));
+    console.log("Sample 1990 data:", climateRawCache["1990"]);
+    window.climateConsolidatedDatasets = computeConsolidatedDatasets(climateRawCache);
+    console.log("Consolidated datasets:", window.climateConsolidatedDatasets);
+    window.climateExpandedDatasets = computeExpandedDatasets(climateRawCache);
+    currentErasMode = "consolidated";
+
+    renderClimateChart(container, window.climateConsolidatedDatasets);
+
+    // fetch and inject comparison box
+    try {
+        const todayAvg = await fetchTodayHistoricalAvg(lat, lon);
+        window.climateTrackerTodayAvg = todayAvg;
+        const comparisonHTML = buildTodayComparisonHTML(climateTrackerCurrentTemp, todayAvg);
+        if (comparisonHTML) {
+            const header = container.querySelector(".climateTrackerHeader");
+            if (header) header.insertAdjacentHTML("afterend", comparisonHTML);
+        }
+    } catch (e) {
+        console.warn("Could not fetch today's historical average:", e);
+    }
+}
+
+function buildDayLabels() {
+    return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+}
+
+function renderClimateChart(container, datasets, eras) {
+    const isConsolidated = currentErasMode === "consolidated";
+
+    const legendLabels = isConsolidated
+        ? [
+            { text: "1940–1980", strokeStyle: "rgba(71, 112, 235, 0.9)", fillStyle: "rgba(71, 112, 235, 0.9)", lineWidth: 2, hidden: false },
+            { text: "1981–2000", strokeStyle: "rgba(70, 170, 230, 0.9)", fillStyle: "rgba(70, 170, 230, 0.9)", lineWidth: 2, hidden: false },
+            { text: "2001–2010", strokeStyle: "rgba(0, 200, 180, 0.9)",  fillStyle: "rgba(0, 200, 180, 0.9)",  lineWidth: 2, hidden: false },
+            { text: "2011–2020", strokeStyle: "rgba(24, 228, 17, 0.9)",  fillStyle: "rgba(24, 228, 17, 0.9)",  lineWidth: 2, hidden: false },
+            { text: "2021–2024", strokeStyle: "rgba(240, 210, 0, 1)",    fillStyle: "rgba(240, 210, 0, 1)",    lineWidth: 2, hidden: false },
+            { text: "2025",      strokeStyle: "rgb(255, 72, 0)",          fillStyle: "rgb(255, 72, 0)",          lineWidth: 3, hidden: false },
+            { text: "2026",      strokeStyle: "rgb(190, 0, 0)",           fillStyle: "rgb(190, 0, 0)",           lineWidth: 3, hidden: false },
+        ]
+        : [
+            { text: "1940–1980", strokeStyle: "rgba(71, 112, 235, 0.8)", fillStyle: "rgba(71, 112, 235, 0.8)", lineWidth: 2, hidden: false },
+            { text: "1981–2000", strokeStyle: "rgba(70, 170, 230, 0.8)", fillStyle: "rgba(70, 170, 230, 0.8)", lineWidth: 2, hidden: false },
+            { text: "2001–2010", strokeStyle: "rgba(0, 200, 180, 0.8)",  fillStyle: "rgba(0, 200, 180, 0.8)",  lineWidth: 2, hidden: false },
+            { text: "2011–2020", strokeStyle: "rgba(24, 228, 17, 0.8)",  fillStyle: "rgba(24, 228, 17, 0.8)",  lineWidth: 2, hidden: false },
+            { text: "2021–2024", strokeStyle: "rgba(240, 210, 0, 1)",    fillStyle: "rgba(240, 210, 0, 1)",    lineWidth: 2, hidden: false },
+            { text: "2025",      strokeStyle: "rgb(255, 72, 0)",          fillStyle: "rgb(255, 72, 0)",          lineWidth: 3, hidden: false },
+            { text: "2026",      strokeStyle: "rgb(190, 0, 0)",           fillStyle: "rgb(190, 0, 0)",           lineWidth: 3, hidden: false },
+        ];
+
+    // inject canvas and toggle button
+    const headerHTML = `
         <div class="climateTrackerHeader">
             <div>
-                <p class="climateTrackerTitle">Climate Tracker</p>
-                <p class="climateTrackerSub">Monthly average temperature by era (°F)</p>
+                <div class="climateTrackerTitle">Climate Tracker</div>
+                <div class="climateTrackerSub">Monthly average temperature by era (°F)</div>
             </div>
-            <button class="climateFullscreenBtn" title="Fullscreen">
-                <i class="fa-solid fa-expand"></i>
-            </button>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button class="climateToggleModeBtn" title="${isConsolidated ? "Show all years" : "Show era averages"}">
+                    <i class="fa-solid ${isConsolidated ? "fa-expand-alt" : "fa-compress-alt"}"></i>
+                    ${isConsolidated ? "All years" : "Era avg"}
+                </button>
+                <button class="climateFullscreenBtn" title="Fullscreen">
+                    <i class="fa-solid fa-expand"></i>
+                </button>
+            </div>
         </div>
         <canvas id="climateCanvas"></canvas>
     `;
 
-    await new Promise(requestAnimationFrame);
-
-    const canvas = document.getElementById("climateCanvas");
-    if (!canvas) {
-        console.error("Canvas not found!");
-        return;
+    // preserve comparison box if it exists
+    const existingBox = container.querySelector(".climateTodayBox");
+    const boxHTML = existingBox ? existingBox.outerHTML : "";
+    container.innerHTML = headerHTML;
+    if (boxHTML) {
+        const header = container.querySelector(".climateTrackerHeader");
+        if (header) header.insertAdjacentHTML("afterend", boxHTML);
     }
 
+    const canvas = document.getElementById("climateCanvas");
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
 
     if (climateChart) {
@@ -1530,25 +1638,10 @@ async function buildClimateChart(lat, lon) {
                     labels: {
                         color: "white",
                         font: { family: "DM Sans", size: 11 },
-                        generateLabels: () => [
-                            { text: "1940–1980", strokeStyle: "rgba(20, 60, 180, 0.9)", fillStyle: "rgba(20, 60, 180, 0.9)",
-                                 lineWidth: 2, hidden: false, fontColor: "#ffffff" },
-                            { text: "1981–2000", strokeStyle: "rgba(70, 170, 230, 0.9)", fillStyle: "rgba(70, 170, 230, 0.9)",
-                                 lineWidth: 2, hidden: false, fontColor: "#ffffff" },
-                            { text: "2001–2010", strokeStyle: "rgba(0, 200, 180, 0.9)",  fillStyle: "rgba(0, 200, 180, 0.9)",
-                                  lineWidth: 2, hidden: false, fontColor: "#ffffff" },
-                            { text: "2011–2020", strokeStyle: "rgba(75, 225, 20, 0.9)",  fillStyle: "rgba(75, 225, 20, 0.9)",
-                                  lineWidth: 2, hidden: false, fontColor: "#ffffff" },
-                            { text: "2021–2024", strokeStyle: "rgba(240, 210, 0, 1)",    fillStyle: "rgba(240, 210, 0, 1)",
-                                    lineWidth: 2, hidden: false, fontColor: "#ffffff" },
-                            { text: "2025",      strokeStyle: "rgb(255, 120, 0)",        fillStyle: "rgb(255, 120, 0)",
-                                        lineWidth: 3, hidden: false, fontColor: "#ffffff" },
-                            { text: "2026",      strokeStyle: "rgb(190, 0, 0)",          fillStyle: "rgb(190, 0, 0)",
-                                        lineWidth: 3, hidden: false, fontColor: "#ffffff" },
-                        ]
+                        generateLabels: () => legendLabels
                     }
                 },
-                tooltip: {enabled: false, intersect: false }
+                tooltip: { enabled: false }
             },
             scales: {
                 x: {
@@ -1566,24 +1659,26 @@ async function buildClimateChart(lat, lon) {
 
     setTimeout(() => climateChart.resize(), 300);
 
-    const fullscreenBtn = document.querySelector(".climateFullscreenBtn");
-    if (fullscreenBtn) {
-        fullscreenBtn.addEventListener("click", openClimateModal);
+    // toggle mode button
+    const toggleModeBtn = container.querySelector(".climateToggleModeBtn");
+    if (toggleModeBtn) {
+        toggleModeBtn.addEventListener("click", () => {
+            if (currentErasMode === "consolidated") {
+                currentErasMode = "expanded";
+                toggleModeBtn.innerHTML = `<i class="fa-solid fa-compress-alt"></i> Era avg`;
+                renderClimateChart(container, window.climateExpandedDatasets);
+            } else {
+                currentErasMode = "consolidated";
+                toggleModeBtn.innerHTML = `<i class="fa-solid fa-expand-alt"></i> All years`;
+                renderClimateChart(container, window.climateConsolidatedDatasets);
+            }
+        });
     }
 
-    // now fetch and inject comparison box below header
-    try {
-        const todayAvg = await fetchTodayHistoricalAvg(lat, lon);
-        window.climateTrackerTodayAvg = todayAvg;
-        const comparisonHTML = buildTodayComparisonHTML(climateTrackerCurrentTemp, todayAvg);
-        if (comparisonHTML) {
-            const header = container.querySelector(".climateTrackerHeader");
-            if (header) {
-                header.insertAdjacentHTML("afterend", comparisonHTML);
-            }
-        }
-    } catch (e) {
-        console.warn("Could not fetch today's historical average:", e);
+    // fullscreen button
+    const fullscreenBtn = container.querySelector(".climateFullscreenBtn");
+    if (fullscreenBtn) {
+        fullscreenBtn.addEventListener("click", openClimateModal);
     }
 }
 
