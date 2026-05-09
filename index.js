@@ -1359,6 +1359,8 @@ let climateChart = null;
 let climateTrackerLat = null;
 let climateTrackerLon = null;
 let climateTrackerCurrentTemp = null;
+let climateRawCache = {};
+let currentErasMode = "consolidated";
 
 if (climateTrackerBtn && climateTrackerContainer) {
     climateTrackerBtn.addEventListener("click", async () => {
@@ -1564,7 +1566,7 @@ function buildDayLabels() {
     return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 }
 
-function renderClimateChart(container, datasets, eras) {
+function renderClimateChart(container, datasets) {
     const isConsolidated = currentErasMode === "consolidated";
 
     const legendLabels = isConsolidated
