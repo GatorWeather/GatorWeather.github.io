@@ -1060,6 +1060,32 @@ li i {
     margin-bottom: 12px;
 }
 
+.climateToggleModeBtn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 999px;
+    color: white;
+    height: 32px;
+    padding: 0 12px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.climateToggleModeBtn:hover {
+    background: rgba(255,255,255,0.22);
+}
+
+.climateToggleModeBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .climateTodayBox {
     display: flex;
     align-items: center;
@@ -1173,6 +1199,8 @@ li i {
         width: 100%;
     }
 }
+
+
 
 /* ── Phone portrait (390px) ── */
 @media (max-width: 430px) {
