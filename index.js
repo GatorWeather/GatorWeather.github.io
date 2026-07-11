@@ -25,6 +25,9 @@ const hourlyList = document.querySelector(".hourlyList");
 const healthToggleBtn = document.querySelector(".healthToggleBtn");
 const healthIndicatorsContainer = document.querySelector(".healthIndicatorsContainer");
 
+const themeToggleBtn = document.getElementById("themeToggleBtn");
+const themeIcon = document.getElementById("themeIcon");
+
 let selectedHourlyMetric = "precipitation";
 let selectedWeeklyMetric = "precipitation";
 
@@ -1841,3 +1844,27 @@ function showClimateTrackerBtn(lat, lon, currentTemp) {
 
 renderFavoritesList();
 updateSaveFavoriteButtonState(false);
+
+// ── Theme Toggle ──
+function applyTheme(mode) {
+    if (mode === "light") {
+        document.body.classList.add("light-mode");
+        themeIcon.classList.remove("fa-sun");
+        themeIcon.classList.add("fa-moon");
+    } else {
+        document.body.classList.remove("light-mode");
+        themeIcon.classList.remove("fa-moon");
+        themeIcon.classList.add("fa-sun");
+    }
+}
+
+// apply saved preference on load
+const savedTheme = localStorage.getItem("theme") || "dark";
+applyTheme(savedTheme);
+
+themeToggleBtn.addEventListener("click", () => {
+    const isLight = document.body.classList.contains("light-mode");
+    const newTheme = isLight ? "dark" : "light";
+    localStorage.setItem("theme", newTheme);
+    applyTheme(newTheme);
+});

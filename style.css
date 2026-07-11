@@ -439,12 +439,6 @@ p {
     margin: 4px 0;
 }
 
-.descriptionDisplay{
-    font-style: italic;
-    font-weight: bold;
-    font-size: .5rem
-
-}
 
 .weatherEmoji{
     text-align: center;
@@ -459,13 +453,6 @@ p {
     text-transform: capitalize;
 }
 
-.sectionLabel{
-    width: 100%;
-    margin: 16px 0 8px 0;
-    font-size: 1.2rem;
-    font-weight: 700;
-    text-align: left;
-}
 
 ul{
     width: 100%;
@@ -698,13 +685,11 @@ li i {
     color: hsla(0, 0%, 0%, 0.75);
 }
 
-.hiLoLabel{
-    width: 100%;
-    font-size: 0.95rem;
+.hiLoLabel {
+    font-size: 0.8rem;
     font-weight: 600;
     opacity: 0.85;
-    margin-bottom: 8px;
-    text-align: left;
+    color: white;
 }
 
 /* 7 day forecast styles */
@@ -724,13 +709,6 @@ li i {
     margin: 0;
     font-size: 1.1rem;
     font-weight: 700;
-    color: white;
-}
-
-.hiLoLabel {
-    font-size: 0.8rem;
-    font-weight: 600;
-    opacity: 0.85;
     color: white;
 }
 
@@ -1129,13 +1107,6 @@ li i {
         flex: none;
     }
 
-    .rightColumn {
-        flex: none;
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-    }
-
     .card {
         width: 100% !important;
         min-width: 0 !important;
@@ -1148,10 +1119,6 @@ li i {
 
     .healthToggleBtn,
     .healthIndicatorsContainer {
-        width: 100%;
-    }
-
-    .forecastContainer {
         width: 100%;
     }
 
@@ -1314,4 +1281,229 @@ li i {
         width: 100%;
         justify-content: center;
     }
+}
+
+/* Theme toggle button */
+.themeToggleBtn {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    z-index: 9999;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    color: white;
+    width: 42px;
+    height: 42px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.themeToggleBtn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+/* ── Light Mode ── */
+body.light-mode {
+    background: #ffffff;
+    color: #1a1a2e;
+}
+
+body.light-mode .themeToggleBtn {
+    background: rgba(0, 0, 0, 0.08);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: #1a3a6e;
+}
+
+body.light-mode .cityInput {
+    background: rgba(255, 255, 255, 0.7);
+    color: #1a1a2e;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+    border: 1px solid rgba(26, 58, 110, 0.2);
+}
+
+body.light-mode .cityInput::placeholder {
+    color: rgba(26, 26, 46, 0.5);
+}
+
+body.light-mode .searchBox i.fa-magnifying-glass,
+body.light-mode .clearBtn,
+body.light-mode .locationBtn {
+    color: rgba(26, 58, 110, 0.7);
+}
+
+body.light-mode .suggestions,
+body.light-mode .searchHistory {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(26, 58, 110, 0.15);
+}
+
+body.light-mode .suggestionItem,
+body.light-mode .searchHistoryItem {
+    color: #1a1a2e;
+}
+
+body.light-mode .suggestionItem:hover,
+body.light-mode .searchHistoryItem:hover {
+    background: rgba(26, 58, 110, 0.08);
+}
+
+body.light-mode .card {
+    background: white;
+    box-shadow: 0 10px 40px rgba(26, 58, 110, 0.15);
+}
+
+body.light-mode h1,
+body.light-mode .tempDisplay {
+    color: #1a1a2e;
+}
+
+body.light-mode .weatherEmoji .desc {
+    color: #1a1a2e;
+}
+
+
+
+body.light-mode .hourlyPanel {
+    background: rgba(58, 90, 210, 0.85);
+    border-color: rgba(58, 90, 210, 0.4);
+}
+
+body.light-mode .hourlyTitle,
+body.light-mode .hourlySub,
+body.light-mode .hourlyTime,
+body.light-mode .hourlyTemp,
+body.light-mode .hourlyEmoji,
+body.light-mode .hourlyRain,
+body.light-mode .hourlyHeader {
+    color: white;
+}
+
+body.light-mode .hourlyItem {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.light-mode .forecastDay {
+    background: rgba(58, 90, 210, 0.85);
+    border-color: rgba(58, 90, 210, 0.4);
+    color: white;
+}
+
+body.light-mode .forcastTitle,
+body.light-mode .hiLoLabel {
+    color: white;
+}
+
+body.light-mode .climateTrackerPanel {
+    background: rgba(58, 90, 210, 0.85);
+    border-color: rgba(58, 90, 210, 0.4);
+}
+
+body.light-mode .climateTrackerTitle,
+body.light-mode .climateTrackerSub {
+    color: white !important;
+}
+
+body.light-mode .climateTodayBox {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+body.light-mode .climateFullscreenBtn,
+body.light-mode .climateToggleModeBtn {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+body.light-mode .healthIndicatorsPanel {
+    background: rgba(58, 90, 210, 0.85);
+    border-color: rgba(58, 90, 210, 0.4);
+    color: white;
+}
+
+body.light-mode .healthIndicatorCard {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.light-mode .healthIndicatorLabel,
+body.light-mode .healthIndicatorValue,
+body.light-mode .healthIndicatorNote,
+body.light-mode .healthIndicatorsTitle,
+body.light-mode .healthIndicatorsSub {
+    color: white;
+}
+
+body.light-mode li {
+    background: rgba(58, 90, 210, 0.85);
+    border-color: rgba(58, 90, 210, 0.4);
+    color: white;
+}
+
+
+body.light-mode .favoritesDrawer {
+    background: rgba(255, 255, 255, 0.95);
+    color: #1a1a2e;
+}
+
+body.light-mode .errorDisplay {
+    color: #1a1a2e;
+}
+
+/* light mode media query overrides */
+@media (max-width: 768px) {
+    body.light-mode .cityInput {
+        background: rgba(255, 255, 255, 0.8);
+    }
+}
+
+body.light-mode .healthToggleBtn,
+body.light-mode .climateTrackerBtn {
+    background: rgba(58, 90, 210, 0.85);
+    border-color: rgba(58, 90, 210, 0.4);
+    color: white;
+}
+
+body.light-mode .healthToggleBtn:hover,
+body.light-mode .climateTrackerBtn:hover {
+    background: rgba(58, 90, 210, 0.95);
+}
+
+body.light-mode .favoriteActionBar .saveFavoriteBtn,
+body.light-mode .favoriteActionBar .favoritesToggleBtn {
+    background: rgba(58, 90, 210, 0.85);
+    border-color: rgba(58, 90, 210, 0.4);
+    color: white;
+}
+
+body.light-mode .favoriteActionBar .saveFavoriteBtn:hover,
+body.light-mode .favoriteActionBar .favoritesToggleBtn:hover {
+    background: rgba(58, 90, 210, 0.95);
+}
+
+body.light-mode .forecast {
+    background: rgba(58, 90, 210, 0.85);
+    border-radius: 12px;
+    padding: 8px;
+}
+
+body.light-mode .forcastTitle,
+body.light-mode .hiLoLabel {
+    color: white;
+}
+
+body.light-mode .forecastDay {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: white;
 }
