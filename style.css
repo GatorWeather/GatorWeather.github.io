@@ -1507,3 +1507,158 @@ body.light-mode .forecastDay {
     border-color: rgba(255, 255, 255, 0.2);
     color: white;
 }
+
+/* Weather Radar */
+.radarBtn {
+    width: 560px;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.16);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.radarBtn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-1px);
+}
+
+.radarBtn.open .toggleChevron {
+    transform: rotate(180deg);
+}
+
+.radarContainer {
+    width: 560px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+}
+
+.radarContainer.show {
+    max-height: 580px;  /* was 520px */
+    opacity: 1;
+}
+
+.radarPanel {
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+    height: 540px;  /* was 480px, extra room for controls */
+    display: flex;
+    flex-direction: column;
+}
+
+#radarMap {
+    width: 100%;
+    flex: 1;  /* fills remaining height after controls */
+}
+
+/* light mode */
+body.light-mode .radarBtn {
+    background: rgba(58, 90, 210, 0.85);
+    border-color: rgba(58, 90, 210, 0.4);
+    color: white;
+}
+
+body.light-mode .radarBtn:hover {
+    background: rgba(58, 90, 210, 0.95);
+}
+
+/* tablet */
+@media (max-width: 768px) {
+    .radarBtn,
+    .radarContainer {
+        width: 100%;
+    }
+}
+
+.radarControls {
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.radarControlsRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.radarControlBtn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+    color: white;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.radarControlBtn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.radarSlider {
+    flex: 1;
+    accent-color: rgba(100, 180, 255, 0.9);
+    cursor: pointer;
+}
+
+.radarTimeLabel {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.8);
+    min-width: 130px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.radarLegendRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.radarLegendBar {
+    flex: 1;
+    height: 4px;
+    border-radius: 999px;
+    overflow: hidden;
+    display: flex;
+}
+
+.radarLegendPast {
+    background: rgba(100, 180, 255, 0.7);
+    height: 100%;
+}
+
+.radarLegendFuture {
+    background: rgba(100, 255, 200, 0.7);
+    height: 100%;
+}
+
+.radarLegendLabel {
+    white-space: nowrap;
+}

@@ -34,6 +34,12 @@ let selectedWeeklyMetric = "precipitation";
 const FAVORITES_STORAGE_KEY = "weatherFavorites";
 let currentWeatherLocation = null;
 
+const radarBtn = document.querySelector(".radarBtn");
+const radarContainer = document.querySelector(".radarContainer");
+let radarMap = null;
+let radarLat = null;
+let radarLon = null;
+
 
 cityInput.addEventListener("input", async () => {
     historyContainer.innerHTML = "";
@@ -1313,6 +1319,7 @@ async function renderAllWeather(lat, lon, historyEntry = null) {
     displayHourlyForecast(hourlyData);
     displayHealthIndicators(healthData);
     showClimateTrackerBtn(lat, lon, weatherData?.main?.temp ?? null);
+    showRadarBtn(lat, lon);
 }
 
 async function fetchAndDisplayAllWeather(lat, lon, cityName, state, country) {
@@ -1868,3 +1875,188 @@ themeToggleBtn.addEventListener("click", () => {
     localStorage.setItem("theme", newTheme);
     applyTheme(newTheme);
 });
+
+// ── Weather Radar ──
+function showRadarBtn(lat, lon) {
+    radarLat = lat;
+    radarLon = lon;
+    radarBtn.style.display = "flex";
+    radarContainer.classList.remove("show");
+    radarBtn.classList.remove("open");
+
+    stopRadarAnimation();
+
+    // destroy old map if city changed
+    if (radarMap) {
+        radarMap.remove();
+        radarMap = null;
+    }
+}
+
+function initRadarMap() {
+    radarContainer.innerHTML = `<div class="radarPanel"><div id="radarMap"></div></div>`;
+
+    radarMap = L.map("radarMap", { zoomControl: true }).setView([radarLat, radarLon], 7);
+
+    // base map tile layer
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+        maxZoom: 18,
+    }).addTo(radarMap);
+
+    // RainViewer animated radar
+    loadRainViewerLayer();
+
+    // city marker
+    L.circleMarker([radarLat, radarLon], {
+        radius: 6,
+        fillColor: "#fff",
+        color: "#1a3a6e",
+        weight: 2,
+        fillOpacity: 1,
+    }).addTo(radarMap);
+}
+
+async function loadRainViewerLayer() {
+    try {
+        const res = await fetch("https://api.rainviewer.com/public/weather-maps.json");
+        const data = await res.json();
+
+        const pastFrames = data.radar.past || [];
+        const futureFrames = data.radar.nowcast || [];
+        const allFrames = [...pastFrames, ...futureFrames];
+
+        if (allFrames.length === 0) return;
+
+        // store frames globally for slider use
+        window.radarFrames = allFrames;
+        window.radarLayers = [];
+        window.currentRadarFrame = pastFrames.length - 1; // start on most recent past frame
+
+        // preload all frame layers but only show current
+        allFrames.forEach((frame, i) => {
+            const layer = L.tileLayer(
+                `https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png`,
+                { opacity: 0, maxZoom: 12, attribution: i === 0 ? '© <a href="https://rainviewer.com">RainViewer</a>' : '' }
+            );
+            layer.addTo(radarMap);
+            window.radarLayers.push(layer);
+        });
+
+        // show current frame
+        showRadarFrame(window.currentRadarFrame);
+
+        // inject controls
+        injectRadarControls(pastFrames.length, allFrames.length);
+
+    } catch (e) {
+        console.warn("Could not load radar layer:", e);
+    }
+}
+
+function showRadarFrame(index) {
+    window.radarLayers.forEach((layer, i) => {
+        layer.setOpacity(i === index ? 0.6 : 0);
+    });
+    window.currentRadarFrame = index;
+
+    // update time label
+    const frame = window.radarFrames[index];
+    const timeLabel = document.getElementById("radarTimeLabel");
+    if (timeLabel && frame) {
+        const date = new Date(frame.time * 1000);
+        const isPast = index < window.radarPastCount;
+        const timeStr = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+        timeLabel.textContent = isPast ? `Past — ${timeStr}` : `Forecast — ${timeStr}`;
+        timeLabel.style.color = isPast ? "rgba(255,255,255,0.8)" : "rgba(100, 220, 255, 0.9)";
+    }
+
+    // update slider
+    const slider = document.getElementById("radarSlider");
+    if (slider) slider.value = index;
+}
+
+function injectRadarControls(pastCount, totalCount) {
+    window.radarPastCount = pastCount;
+
+    const panel = document.querySelector(".radarPanel");
+    if (!panel) return;
+
+    const controls = document.createElement("div");
+    controls.classList.add("radarControls");
+    controls.innerHTML = `
+        <div class="radarControlsRow">
+            <button id="radarPlayBtn" class="radarControlBtn">
+                <i class="fa-solid fa-play"></i>
+            </button>
+            <input id="radarSlider" type="range" min="0" max="${totalCount - 1}" 
+                   value="${pastCount - 1}" class="radarSlider">
+            <span id="radarTimeLabel" class="radarTimeLabel"></span>
+        </div>
+        <div class="radarLegendRow">
+            <span class="radarLegendLabel">Past</span>
+            <div class="radarLegendBar">
+                <div class="radarLegendPast" style="width:${(pastCount/totalCount*100).toFixed(0)}%"></div>
+                <div class="radarLegendFuture" style="width:${((totalCount-pastCount)/totalCount*100).toFixed(0)}%"></div>
+            </div>
+            <span class="radarLegendLabel">Forecast</span>
+        </div>
+    `;
+    panel.appendChild(controls);
+
+    // show current time label
+    showRadarFrame(pastCount - 1);
+
+    // slider
+    const slider = document.getElementById("radarSlider");
+    slider.addEventListener("input", () => {
+        stopRadarAnimation();
+        showRadarFrame(parseInt(slider.value));
+    });
+
+    // play/pause
+    document.getElementById("radarPlayBtn").addEventListener("click", () => {
+        if (window.radarAnimating) {
+            stopRadarAnimation();
+        } else {
+            startRadarAnimation();
+        }
+    });
+}
+
+function startRadarAnimation() {
+    window.radarAnimating = true;
+    const playBtn = document.getElementById("radarPlayBtn");
+    if (playBtn) playBtn.innerHTML = `<i class="fa-solid fa-pause"></i>`;
+
+    window.radarInterval = setInterval(() => {
+        const next = (window.currentRadarFrame + 1) % window.radarFrames.length;
+        showRadarFrame(next);
+    }, 500);
+}
+
+function stopRadarAnimation() {
+    window.radarAnimating = false;
+    const playBtn = document.getElementById("radarPlayBtn");
+    if (playBtn) playBtn.innerHTML = `<i class="fa-solid fa-play"></i>`;
+    clearInterval(window.radarInterval);
+}
+
+if (radarBtn) {
+    radarBtn.addEventListener("click", () => {
+        const isOpen = radarContainer.classList.contains("show");
+        if (isOpen) {
+            radarContainer.classList.remove("show");
+            radarBtn.classList.remove("open");
+        } else {
+            radarContainer.classList.add("show");
+            radarBtn.classList.add("open");
+            if (!radarMap) {
+                setTimeout(() => {
+                    initRadarMap();
+                    setTimeout(() => radarMap && radarMap.invalidateSize(), 400);
+                }, 100);
+            }
+        }
+    });
+}
