@@ -2100,9 +2100,9 @@ async function initHurricaneMap() {
     const results = await Promise.all(
         feeds.map(async feed => {
             try {
-                const res = await fetch(feed.url);
-                const text = await res.text();
-                return parseNHCFeed(text, feed.basin);
+                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}`);
+                const data = await res.json();
+                return parseNHCFeed(data.contents, feed.basin);
             } catch (e) {
                 console.warn(`Could not fetch ${feed.basin} feed:`, e);
                 return [];
