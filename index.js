@@ -2081,35 +2081,36 @@ function showHurricaneBtn() {
 async function initHurricaneMap() {
     hurricaneContainer.innerHTML = `<div class="hurricanePanel"><div id="hurricaneMap"></div></div>`;
 
+    // fetch from all NHC basin feeds and allow for multiple storms in the same basin
     const feeds = [
-        { url: "https://www.nhc.noaa.gov/nhc_at1.xml", basin: "Atlantic" },
-        { url: "https://www.nhc.noaa.gov/nhc_at2.xml", basin: "Atlantic" },
-        { url: "https://www.nhc.noaa.gov/nhc_at3.xml", basin: "Atlantic" },
-        { url: "https://www.nhc.noaa.gov/nhc_at4.xml", basin: "Atlantic" },
-        { url: "https://www.nhc.noaa.gov/nhc_at5.xml", basin: "Atlantic" },
-        { url: "https://www.nhc.noaa.gov/nhc_ep1.xml", basin: "East Pacific" },
-        { url: "https://www.nhc.noaa.gov/nhc_ep2.xml", basin: "East Pacific" },
-        { url: "https://www.nhc.noaa.gov/nhc_ep3.xml", basin: "East Pacific" },
-        { url: "https://www.nhc.noaa.gov/nhc_ep4.xml", basin: "East Pacific" },
-        { url: "https://www.nhc.noaa.gov/nhc_ep5.xml", basin: "East Pacific" },
-        { url: "https://www.nhc.noaa.gov/nhc_cp1.xml", basin: "Central Pacific" },
-        { url: "https://www.nhc.noaa.gov/nhc_cp2.xml", basin: "Central Pacific" },
-        { url: "https://www.nhc.noaa.gov/nhc_cp3.xml", basin: "Central Pacific" },
-    ];
+    { url: "https://www.nhc.noaa.gov/nhc_at1.xml", basin: "Atlantic" },
+    { url: "https://www.nhc.noaa.gov/nhc_at2.xml", basin: "Atlantic" },
+    { url: "https://www.nhc.noaa.gov/nhc_at3.xml", basin: "Atlantic" },
+    { url: "https://www.nhc.noaa.gov/nhc_at4.xml", basin: "Atlantic" },
+    { url: "https://www.nhc.noaa.gov/nhc_at5.xml", basin: "Atlantic" },
+    { url: "https://www.nhc.noaa.gov/nhc_ep1.xml", basin: "East Pacific" },
+    { url: "https://www.nhc.noaa.gov/nhc_ep2.xml", basin: "East Pacific" },
+    { url: "https://www.nhc.noaa.gov/nhc_ep3.xml", basin: "East Pacific" },
+    { url: "https://www.nhc.noaa.gov/nhc_ep4.xml", basin: "East Pacific" },
+    { url: "https://www.nhc.noaa.gov/nhc_ep5.xml", basin: "East Pacific" },
+    { url: "https://www.nhc.noaa.gov/nhc_cp1.xml", basin: "Central Pacific" },
+    { url: "https://www.nhc.noaa.gov/nhc_cp2.xml", basin: "Central Pacific" },
+    { url: "https://www.nhc.noaa.gov/nhc_cp3.xml", basin: "Central Pacific" },
+];
 
     const results = await Promise.all(
-        feeds.map(async feed => {
-            try {
-                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}`);
-                const data = await res.json();
-                return parseNHCFeed(data.contents, feed.basin);
-            } catch (e) {
-                console.warn(`Could not fetch ${feed.basin} feed:`, e);
-                return [];
-            }
-        })
-    );
-    const storms = results.flat();
+    feeds.map(async feed => {
+        try {
+            const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}`);
+            const data = await res.json();
+            return parseNHCFeed(data.contents, feed.basin);
+        } catch (e) {
+            console.warn(`Could not fetch ${feed.basin} feed:`, e);
+            return [];
+        }
+    })
+);
+const storms = results.flat();
 
     const panel = document.querySelector(".hurricanePanel");
 
@@ -2158,6 +2159,7 @@ async function initHurricaneMap() {
         const color = getCategoryColor(category);
         const label = getCategoryLabel(category);
 
+        // current position marker
         const stormIcon = L.divIcon({
             html: `<div style="
                 background: ${color};
@@ -2177,24 +2179,25 @@ async function initHurricaneMap() {
         });
 
         L.marker([storm.lat, storm.lon], { icon: stormIcon })
-            .bindPopup(`
-                <div style="font-family: DM Sans, sans-serif; min-width: 180px;">
-                    <div style="font-weight: 700; font-size: 1rem; margin-bottom: 4px;">
-                        🌀 ${storm.name}
-                    </div>
-                    <div style="font-size: 0.85rem; color: ${color}; font-weight: 700; margin-bottom: 8px;">
-                        ${label}
-                    </div>
-                    <div style="font-size: 0.85rem; line-height: 1.8;">
-                        <div>💨 Wind: <strong>${storm.maxWind || "--"} mph</strong></div>
-                        <div>📉 Pressure: <strong>${storm.pressure || "--"} mb</strong></div>
-                        <div>➡️ Moving: <strong>${storm.movement || "--"}</strong></div>
-                        <div>🌊 Basin: <strong>${storm.basin}</strong></div>
-                    </div>
-                    ${storm.headline ? `<div style="margin-top:8px; font-size:0.8rem; opacity:0.7; font-style:italic;">${storm.headline}</div>` : ""}
-                </div>
-            `)
-            .addTo(hurricaneMap);
+    .bindPopup(`
+        <div style="font-family: DM Sans, sans-serif; min-width: 180px;">
+            <div style="font-weight: 700; font-size: 1rem; margin-bottom: 4px;">
+                🌀 ${storm.name}
+            </div>
+            <div style="font-size: 0.85rem; color: ${color}; font-weight: 700; margin-bottom: 8px;">
+                ${label}
+            </div>
+            <div style="font-size: 0.85rem; line-height: 1.8;">
+                <div>💨 Wind: <strong>${storm.maxWind || "--"} mph</strong></div>
+                <div>📉 Pressure: <strong>${storm.pressure || "--"} mb</strong></div>
+                <div>➡️ Moving: <strong>${storm.movement || "--"}</strong></div>
+                <div>🌊 Basin: <strong>${storm.basin}</strong></div>
+            </div>
+            ${storm.headline ? `<div style="margin-top:8px; font-size:0.8rem; opacity:0.7; font-style:italic;">${storm.headline}</div>` : ""}
+        </div>
+    `)
+    .addTo(hurricaneMap);
+
     });
 
     setTimeout(() => hurricaneMap && hurricaneMap.invalidateSize(), 400);
