@@ -1663,3 +1663,15 @@ body.light-mode .radarBtn:hover {
     white-space: nowrap;
 }
 
+.leaflet-container {
+    touch-action: pan-x pan-y;
+}
+
+.leftColumn,
+.rightColumn {
+    overflow: visible;
+}
+
+.mainLayout {
+    overflow: visible;
+}

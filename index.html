@@ -10,23 +10,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
-<div id="climateModal" style="display:none;">
-    <div class="climateModalOverlay" onclick="closeClimateModal()"></div>
-    <div class="climateModalContent">
-        <div class="climateModalHeader">
-            <div>
-                <p class="climateTrackerTitle">Climate Tracker</p>
-                <p class="climateTrackerSub">Monthly average temperature by era (°F)</p>
-            </div>
-            <button class="climateModalCloseBtn" onclick="closeClimateModal()">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-        <canvas id="climateModalCanvas"></canvas>
-    </div>
-</div>
 <body>
-    
     <div class="favoritesDrawerOverlay"></div>
 
     <aside class="favoritesDrawer" aria-hidden="true">
@@ -39,11 +23,11 @@
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
-
         <div class="favoritesList"></div>
     </aside>
+
     <button class="themeToggleBtn" id="themeToggleBtn" aria-label="Toggle light/dark mode">
-    <i class="fa-solid fa-sun" id="themeIcon"></i>
+        <i class="fa-solid fa-sun" id="themeIcon"></i>
     </button>
     <img src="GatorWeather.png" class="logo" alt="Gator Engineering logo">
 
@@ -55,7 +39,6 @@
             <i class="fa-solid fa-location-crosshairs locationBtn" title="Use current location"></i>
             <div class="suggestions"></div>
             <div class="searchHistory"></div>
-
         </div>
     </form>
 
@@ -67,7 +50,6 @@
                 <button class="favoritesToggleBtn" type="button" aria-label="Open saved cities">
                     <i class="fa-solid fa-list"></i>
                 </button>
-                
                 <button class="saveFavoriteBtn" type="button">
                     <i class="fa-solid fa-heart"></i>
                     <span>Save current city</span>
@@ -106,28 +88,33 @@
                 <i class="fa-solid fa-chevron-down toggleChevron"></i>
             </button>
 
-                        <div class="climateTrackerContainer"></div>
-        </div>  <!-- closes leftColumn -->
-
-        <div class="rightColumn">
-             <div class="hourlyPanel"> 
-                <h2 class="hourlyTitle">Hourly Forecast</h2>
-                <div class="hourlySub">Next 24 hours</div>
-                <div class="hourlyList"></div>
-             </div>
+            <div class="climateTrackerContainer"></div>
         </div>
-    </div>  <!-- closes mainLayout -->
-
 
         <div class="rightColumn">
-             <div class="hourlyPanel"> 
+            <div class="hourlyPanel">
                 <h2 class="hourlyTitle">Hourly Forecast</h2>
                 <div class="hourlySub">Next 24 hours</div>
                 <div class="hourlyList"></div>
-             </div>
+            </div>
         </div>
     </div>
-</div>
+
+    <div id="climateModal" style="display:none;">
+        <div class="climateModalOverlay" onclick="closeClimateModal()"></div>
+        <div class="climateModalContent">
+            <div class="climateModalHeader">
+                <div>
+                    <div class="climateTrackerTitle">Climate Tracker</div>
+                    <div class="climateTrackerSub">Monthly average temperature by era (°F)</div>
+                </div>
+                <button class="climateModalCloseBtn" onclick="closeClimateModal()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <canvas id="climateModalCanvas"></canvas>
+        </div>
+    </div>
 
     <script src="index.js"></script>
 </body>
