@@ -1896,7 +1896,11 @@ function showRadarBtn(lat, lon) {
 function initRadarMap() {
     radarContainer.innerHTML = `<div class="radarPanel"><div id="radarMap"></div></div>`;
 
-    radarMap = L.map("radarMap", { zoomControl: true }).setView([radarLat, radarLon], 7);
+    radarMap = L.map("radarMap", { 
+        zoomControl: true,
+        maxZoom: 12,
+        scrollWheelZoom: false  
+    }).setView([radarLat, radarLon], 7);
 
     // base map tile layer
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
