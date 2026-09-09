@@ -1456,6 +1456,39 @@ body.light-mode .favoritesDrawer {
     color: #1a1a2e;
 }
 
+body.light-mode .favoriteCityCard {
+    background: rgba(58, 90, 210, 0.85);
+    border-color: rgba(58, 90, 210, 0.4);
+    color: white;
+}
+
+body.light-mode .favoriteCityName {
+    color: white;
+}
+
+body.light-mode .favoriteCityRegion {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+body.light-mode .favoriteWeatherPreview .temp,
+body.light-mode .favoriteWeatherPreview .desc {
+    color: white;
+}
+
+body.light-mode .favoriteDeleteBtn {
+    color: white;
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.light-mode .favoriteDeleteBtn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+body.light-mode .favoriteEmptyState {
+    color: #1a1a2e;
+}
+
 body.light-mode .errorDisplay {
     color: #1a1a2e;
 }
