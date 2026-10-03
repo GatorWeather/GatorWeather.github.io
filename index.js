@@ -39,6 +39,7 @@ const radarContainer = document.querySelector(".radarContainer");
 let radarMap = null;
 let radarLat = null;
 let radarLon = null;
+let currentCityTimezone = null;
 
 
 cityInput.addEventListener("input", async () => {
@@ -513,6 +514,9 @@ function displayWeatherInfo(data, locationData = null){
     if (regionParts.length > 0) {
         rightSide.appendChild(regionDisplay);
     }
+    if (currentCityTimezone) {
+    rightSide.appendChild(displayCityDateTime(currentCityTimezone));
+    }
 
     card.appendChild(rightSide);    
     card.appendChild(leftSide);
@@ -885,6 +889,8 @@ function display7DayForecast(forecastData){
         month: "2-digit",
         day: "2-digit"
     }).format(new Date()); 
+
+    currentCityTimezone = forecastData.timezone;
 
     // find first weekly forecast date that is today or later
     let start = dates.findIndex(date => date >= todayInCity);
@@ -1277,6 +1283,8 @@ async function renderAllWeather(lat, lon, historyEntry = null) {
             return null;
          }) 
     ]);
+
+    currentCityTimezone = forecastData.timezone; 
 
     if (airQualityForecastData?.hourly?.us_aqi) {
         forecastData.hourly.us_aqi = airQualityForecastData.hourly.us_aqi;
@@ -1875,6 +1883,33 @@ themeToggleBtn.addEventListener("click", () => {
     localStorage.setItem("theme", newTheme);
     applyTheme(newTheme);
 });
+
+function displayCityDateTime(timezone) {
+    const dateTimeEl = document.createElement("div");
+    dateTimeEl.classList.add("cityDateTime");
+    dateTimeEl.id = "cityDateTime";
+
+    function updateTime() {
+        const now = new Date();
+        const options = {
+            timeZone: timezone,
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true
+        };
+        dateTimeEl.textContent = now.toLocaleString("en-US", options);
+    }
+
+    updateTime();
+    // update every 30 seconds
+    if (window.dateTimeInterval) clearInterval(window.dateTimeInterval);
+    window.dateTimeInterval = setInterval(updateTime, 30000);
+
+    return dateTimeEl;
+}
 
 // ── Weather Radar ──
 function showRadarBtn(lat, lon) {

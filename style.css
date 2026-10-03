@@ -1708,3 +1708,11 @@ body.light-mode .radarBtn:hover {
 .mainLayout {
     overflow: visible;
 }
+
+.cityDateTime {
+    font-size: 1.5rem;
+    font-weight: 600;
+    opacity: 0.75;
+    margin-top: 4px;
+    text-align: right;
+}
