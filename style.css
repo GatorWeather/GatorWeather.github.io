@@ -1716,3 +1716,47 @@ body.light-mode .radarBtn:hover {
     margin-top: 4px;
     text-align: right;
 }
+
+/* weather card animations */
+@keyframes stormPulse {
+    0%   { box-shadow: 0 30px 50px rgba(85, 85, 153, 0.4); }
+    50%  { box-shadow: 0 30px 60px rgba(85, 85, 200, 0.7), 0 0 30px rgba(100, 100, 255, 0.3); }
+    100% { box-shadow: 0 30px 50px rgba(85, 85, 153, 0.4); }
+}
+
+@keyframes rainPulse {
+    0%   { box-shadow: 0 30px 50px rgba(30, 80, 150, 0.3); }
+    50%  { box-shadow: 0 30px 60px rgba(30, 80, 180, 0.55), 0 0 20px rgba(50, 100, 200, 0.2); }
+    100% { box-shadow: 0 30px 50px rgba(30, 80, 150, 0.3); }
+}
+
+.card-storm-pulse {
+    animation: stormPulse 2.5s ease-in-out infinite;
+}
+
+.card-rain-pulse {
+    animation: rainPulse 3s ease-in-out infinite;
+}
+
+
+.card {
+    transition: background 0.8s ease;
+}
+
+/* dark text for pastel/light card backgrounds */
+.card.card-night h1,
+.card.card-night .tempDisplay,
+.card.card-night .weatherEmoji .desc,
+.card.card-night .cityDateTime,
+.card.card-night .regionDisplay {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* light text override for night mode card */
+.card h1,
+.card .tempDisplay,
+.card .weatherEmoji .desc,
+.card .cityDateTime,
+.card .regionDisplay {
+    color: #1a2a3a;
+}
