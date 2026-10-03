@@ -952,12 +952,7 @@ function display7DayForecast(forecastData){
 }
 
 function displayHourlyForecast(hourlyData){
-    const panel = document.querySelector(".hourlyPanel");
-    panel.style.display = "flex";
-
-    const hourlyList = document.querySelector(".hourlyList");
-    hourlyList.innerHTML = "";
-
+    
     const header = document.createElement("div");
     header.classList.add("hourlyHeader");
 
@@ -1362,7 +1357,7 @@ async function fetchAndDisplayAllWeather(lat, lon, cityName, state, country) {
             state, 
             country
         });
-    } catch (error) {
+        } catch (error) {
         console.error("Weather Fetch Failed:", error);
         let message = "fetchAndDisplayAllWeather failed";
         if (error.message) {
