@@ -20,7 +20,6 @@ const favoritesList = document.querySelector(".favoritesList");
 const saveFavoriteBtn = document.querySelector(".saveFavoriteBtn");
 const favoriteActionBar = document.querySelector(".favoriteActionBar");
 
-const hourlyPanel = document.querySelector(".hourlyPanel");
 const hourlyList = document.querySelector(".hourlyList");
 const healthToggleBtn = document.querySelector(".healthToggleBtn");
 const healthIndicatorsContainer = document.querySelector(".healthIndicatorsContainer");
@@ -41,6 +40,15 @@ let radarLat = null;
 let radarLon = null;
 let currentCityTimezone = null;
 
+
+function displayError(message) {
+    const errorDisplay = document.createElement("p");
+    errorDisplay.textContent = message;
+    errorDisplay.classList.add("errorDisplay");
+    card.textContent = "";
+    card.style.display = "flex";
+    card.appendChild(errorDisplay);
+}
 
 cityInput.addEventListener("input", async () => {
     historyContainer.innerHTML = "";
@@ -598,51 +606,76 @@ function getWeatherEmoji(weatherId, sunrise, sunset){
         return "❓";   // unknown
 }
 
-function setWeatherTheme(weatherId, sunrise, sunset){
+function setWeatherTheme(weatherId) {
+    card.classList.remove("card-storm-pulse", "card-rain-pulse", "card-night");
 
-    const now = Math.floor(Date.now() / 1000);
-    const isDay = (sunrise && sunset) ? (now >= sunrise && now < sunset) : true;
-
-    if(weatherId >= 200 && weatherId < 600){
-        card.style.background = isDay 
-        ? "linear-gradient(#8aa2ff, #5b6ed6)" 
-        : "linear-gradient(#4a5a8a, #2f3d66)"; 
+    // determine if it's night using the city's local timezone
+    let isNight = false;
+    if (currentCityTimezone) {
+        const hour = parseInt(new Date().toLocaleString("en-US", {
+            timeZone: currentCityTimezone,
+            hour: "numeric",
+            hour12: false
+        }));
+        isNight = hour < 6 || hour >= 20;
     }
-    else if(weatherId >= 600 && weatherId < 700){
-        card.style.background = isDay
-        ? "linear-gradient(#e0f3ff, #b8d9ff)" 
-        : "linear-gradient(#95a9c7, #63738d)"; 
+
+    if (isNight) {
+        card.classList.add("card-night");
+        // night — deep midnight blue/purple regardless of condition
+        if (weatherId >= 200 && weatherId < 300) {
+            card.style.background = "linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 50%, #0f0f23 100%)";
+            card.classList.add("card-storm-pulse");
+        } else if (weatherId >= 500 && weatherId < 600) {
+            card.style.background = "linear-gradient(135deg, #0d1520 0%, #1a2535 50%, #0d1520 100%)";
+            card.classList.add("card-rain-pulse");
+        } else if (weatherId >= 600 && weatherId < 700) {
+            card.style.background = "linear-gradient(135deg, #1a1f2e 0%, #252b3b 50%, #1a1f2e 100%)";
+        } else {
+            card.style.background = "linear-gradient(135deg, #0d0f1a 0%, #1a1c2e 50%, #12142a 100%)";
+        }
+        return;
     }
-    else if(weatherId === 800){
-        card.style.background = isDay
-        ? "linear-gradient(#ffd76a, #ffb347)" 
-        : "linear-gradient(#1e2a44, #3b4f7a)"; 
+
+    // daytime pastel conditions
+    if (weatherId >= 200 && weatherId < 300) {
+        // thunderstorm — muted slate purple
+        card.style.background = "linear-gradient(135deg, #b0aec8 0%, #9b99b8 40%, #8887a8 100%)";
+        card.classList.add("card-storm-pulse");
     }
-    else if(weatherId > 800){
-        card.style.background = isDay
-        ? "linear-gradient(#d7d7d7, #a8a8a8)" 
-        : "linear-gradient(#5c6470, #3e4652)"; 
+    else if (weatherId >= 300 && weatherId < 400) {
+        // drizzle — soft powder blue
+        card.style.background = "linear-gradient(135deg, #b8cfe8 0%, #c5d8ed 50%, #d4e4f4 100%)";
+        card.classList.add("card-rain-pulse");
     }
-}
-
-function displayError(message){
-
-    const errorDisplay = document.createElement("p");
-    errorDisplay.textContent = message;
-    errorDisplay.classList.add("errorDisplay");
-
-    card.textContent = "";
-    card.style.display = "flex";
-    card.appendChild(errorDisplay);
-
-    conditionsContainer.textContent = "";
-    forecastWrapper.textContent = "";
-    hourlyList.innerHTML = "";
-    hourlyPanel.style.display = "none";
-    clearHealthIndicators();
-
-    if (favoriteActionBar) {
-        favoriteActionBar.style.display = "none";
+    else if (weatherId >= 500 && weatherId < 600) {
+        // rain — soft steel blue
+        card.style.background = "linear-gradient(135deg, #a8bfd6 0%, #b8ccde 50%, #c5d6e8 100%)";
+        card.classList.add("card-rain-pulse");
+    }
+    else if (weatherId >= 600 && weatherId < 700) {
+        // snow — soft icy lavender white
+        card.style.background = "linear-gradient(135deg, #e8eef8 0%, #dde6f4 40%, #d0ddf0 100%)";
+    }
+    else if (weatherId >= 700 && weatherId < 800) {
+        // fog — warm pastel grey
+        card.style.background = "linear-gradient(135deg, #d4d8de 0%, #c8cdd4 50%, #bdc3cb 100%)";
+    }
+    else if (weatherId === 800) {
+        // clear sky — soft sky blue to warm peach
+        card.style.background = "linear-gradient(135deg, #aed6f1 0%, #c5e3f7 40%, #fde8cc 100%)";
+    }
+    else if (weatherId === 801) {
+        // few clouds — light blue with soft white
+        card.style.background = "linear-gradient(135deg, #b8d9f0 0%, #cce4f5 50%, #ddeefa 100%)";
+    }
+    else if (weatherId === 802) {
+        // scattered clouds — soft grey blue
+        card.style.background = "linear-gradient(135deg, #c2cfd8 0%, #cdd8e0 50%, #d8e2e8 100%)";
+    }
+    else if (weatherId >= 803) {
+        // overcast — muted cool grey
+        card.style.background = "linear-gradient(135deg, #b8c0c8 0%, #c2cad0 50%, #ccd3d8 100%)";
     }
 }
 
@@ -927,12 +960,7 @@ function display7DayForecast(forecastData){
 }
 
 function displayHourlyForecast(hourlyData){
-    const panel = document.querySelector(".hourlyPanel");
-    panel.style.display = "flex";
-
-    const hourlyList = document.querySelector(".hourlyList");
-    hourlyList.innerHTML = "";
-
+    
     const header = document.createElement("div");
     header.classList.add("hourlyHeader");
 
@@ -1337,7 +1365,7 @@ async function fetchAndDisplayAllWeather(lat, lon, cityName, state, country) {
             state, 
             country
         });
-    } catch (error) {
+        } catch (error) {
         console.error("Weather Fetch Failed:", error);
         let message = "fetchAndDisplayAllWeather failed";
         if (error.message) {
