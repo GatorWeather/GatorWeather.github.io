@@ -20,7 +20,6 @@ const favoritesList = document.querySelector(".favoritesList");
 const saveFavoriteBtn = document.querySelector(".saveFavoriteBtn");
 const favoriteActionBar = document.querySelector(".favoriteActionBar");
 
-const hourlyPanel = document.querySelector(".hourlyPanel");
 const hourlyList = document.querySelector(".hourlyList");
 const healthToggleBtn = document.querySelector(".healthToggleBtn");
 const healthIndicatorsContainer = document.querySelector(".healthIndicatorsContainer");
@@ -41,6 +40,15 @@ let radarLat = null;
 let radarLon = null;
 let currentCityTimezone = null;
 
+
+function displayError(message) {
+    const errorDisplay = document.createElement("p");
+    errorDisplay.textContent = message;
+    errorDisplay.classList.add("errorDisplay");
+    card.textContent = "";
+    card.style.display = "flex";
+    card.appendChild(errorDisplay);
+}
 
 cityInput.addEventListener("input", async () => {
     historyContainer.innerHTML = "";
