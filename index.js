@@ -959,7 +959,11 @@ function display7DayForecast(forecastData){
     forecastWrapper.appendChild(forecastContainer);
 }
 
-function displayHourlyForecast(hourlyData){
+function displayHourlyForecast(hourlyData) {
+    // clear previous content and show the panel
+    hourlyList.innerHTML = "";
+    const hourlyPanel = document.querySelector(".hourlyPanel");
+    if (hourlyPanel) hourlyPanel.style.display = "flex";
     
     const header = document.createElement("div");
     header.classList.add("hourlyHeader");
